@@ -118,7 +118,7 @@ end;
 function ChoiceCount(line: Byte): Byte;
 begin
   case line of
-    HW_VIDEO: ChoiceCount := 5;
+    HW_VIDEO: ChoiceCount := 7;
     HW_SOUND: ChoiceCount := 5;
   else
     ChoiceCount := 2;
@@ -128,8 +128,8 @@ end;
 { The POOL.CFG letter of choice i of Hardware line. }
 function ChoiceLetter(line, i: Byte): Char;
 const
-  VIDEO: array[1..5] of Char = (C_OPT.VIDEO_CGA, C_OPT.VIDEO_EGA, C_OPT.VIDEO_TANDY, C_OPT.VIDEO_VGA,
-    C_OPT.VIDEO_VESA);
+  VIDEO: array[1..7] of Char = (C_OPT.VIDEO_CGA, C_OPT.VIDEO_EGA, C_OPT.VIDEO_TANDY, C_OPT.VIDEO_VGA,
+    C_OPT.VIDEO_VESA, C_OPT.VIDEO_SQUASHED, C_OPT.VIDEO_STRETCHED);
   SOUND: array[1..5] of Char = (C_OPT.SOUND_SILENT, C_OPT.SOUND_SPEAKER, C_OPT.SOUND_TANDY, C_OPT.SOUND_ADLIB,
     C_OPT.SOUND_BLASTER);
   INTRO: array[1..2] of Char = (C_OPT.INTRO_FULL, C_OPT.INTRO_SHORT);
@@ -145,7 +145,8 @@ end;
 { The name of choice i of Hardware line. }
 function ChoiceName(line, i: Byte): TuiKit.TLine;
 const
-  VIDEO: array[1..5] of string[11] = ('CGA', 'EGA', 'Tandy', 'VGA', 'VGA 640x400');
+  VIDEO: array[1..7] of string[21] = ('CGA', 'EGA', 'Tandy', 'VGA', 'VGA 640x400', 'VGA 640x480 squashed',
+    'VGA 640x480 stretched');
   SOUND: array[1..5] of string[13] = ('None', 'PC Speaker', 'Tandy', 'AdLib', 'Sound Blaster');
   INTRO: array[1..2] of string[5] = ('Full', 'Short');
 begin
@@ -541,7 +542,7 @@ begin
                 Put(0, 'The graphics card the DOS game draws with. The native game always');
                 Put(0, 'draws in VGA (EGA''s 16 colours), whatever this says:');
                 Inc(row);
-                Put(2, 'CGA, EGA, Tandy, VGA, VGA 640x400   all VGA natively');
+                Put(2, 'CGA, EGA, Tandy, VGA and the VGA 640 modes: all VGA natively');
                 Inc(row);
                 Put(0, 'It is kept for a copy of the game run under DOS or DOSBox.');
                 Put(0, 'POOLRAD reads this as POOL.CFG''s first line.');
@@ -575,6 +576,8 @@ begin
                 Put(2, 'VGA     EGA''s 16 colours in VGA''s 320x200 mode (not in SSI''s game)');
                 Put(2, 'VGA 640x400   VGA through VESA, a prototype: the art 2x2, more');
                 Put(2, '              text room; VGA where the card has no VESA');
+                Put(2, 'VGA 640x480 squashed    640x400 and a party strip under it');
+                Put(2, 'VGA 640x480 stretched   the art 2x2.4, in SSI''s proportions');
                 Inc(row);
                 Put(0, 'START reads this as POOL.CFG''s first line.');
               end;

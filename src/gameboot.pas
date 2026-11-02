@@ -182,7 +182,8 @@ begin
   GameVars.savedVideoMode := GameVars.interruptRegisters.al;
   GameVars.curVideoMode := GameVars.savedVideoMode;
   { the video driver for POOL.CFG's mode: E for EGA, T for Tandy, V for VGA, H for VGA at 640 x 400 through VESA (#1231)
-    when the card has it, and VGA when it does not, else CGA; natively VGA, which shows EGA's colours }
+    when the card has it, and VGA when it does not, Q and S for 640 x 480 squashed and stretched, 640 x 400 when the
+    card has no 640 x 480, else CGA; natively VGA, which shows EGA's colours }
 {$IFDEF FPC}
   VidVga.Install;
 {$ELSE}
@@ -190,8 +191,17 @@ begin
     C_OPT.VIDEO_EGA: VidEga.Install;
     C_OPT.VIDEO_TANDY: VidTdy.Install;
     C_OPT.VIDEO_VGA: VidVga.Install;
-    C_OPT.VIDEO_VESA:
-      if not VidVesa.Install then begin
+    C_OPT.VIDEO_VESA, C_OPT.VIDEO_SQUASHED, C_OPT.VIDEO_STRETCHED:
+      if (cfgVideo <> C_OPT.VIDEO_VESA) and
+         not VidVesa.Install(VidVesa.MODE_480, cfgVideo = C_OPT.VIDEO_STRETCHED) then begin
+        WriteLn('This display has no VESA mode 101h (640x480, 256 colours): the game tries 640x400.');
+        Delay(3000);
+        if not VidVesa.Install(VidVesa.MODE_400, False) then begin
+          WriteLn('This display has no VESA mode 100h (640x400, 256 colours): the game runs in VGA, 320x200.');
+          Delay(3000);
+          VidVga.Install;
+        end;
+      end else if (cfgVideo = C_OPT.VIDEO_VESA) and not VidVesa.Install(VidVesa.MODE_400, False) then begin
         WriteLn('This display has no VESA mode 100h (640x400, 256 colours): the game runs in VGA, 320x200.');
         Delay(3000);
         VidVga.Install;

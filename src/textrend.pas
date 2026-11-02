@@ -9,7 +9,8 @@ interface
 uses Types;
 
 const
-  { the 640 x 400 screen's text grid (Fine): 80 columns of 8 x 8 cells, 50 rows }
+  { the 640 x 400 layout's text grid (Fine): 80 columns of 8 x 8 cells, 50 rows; on 640 x 480 squashed a strip of 10
+    rows more lies under it (TVideoDriver.fineLastRow) }
   FINE_LAST_COL = 79;
   FINE_LAST_ROW = 49;
   { the fine row the bottom-line menus are drawn on: the top of the 320 x 200 layout's row 24 }
@@ -19,6 +20,10 @@ var
   { DisplayMessageWindow's text that runs past its window's last row waits on the text delay (PauseOnly) before the rest
     is shown, not for a key: the full-width combat view's two message lines (CbtMap.SetLayout, #1211) }
   pageByDelay: Boolean;
+  { Called as each bottom-line menu is drawn on the fine screen (MenuCore.HorizontalMenu) to draw what lies outside the
+    320 x 200 layout: on 640 x 480 squashed, the party strip under it (CharDisp.DrawStrip, which GameInit sets). Nil for
+    none. }
+  stripHook: Types.TIdleProc;
   { how many times the game has waited over its text, by PauseOnly or DisplayAndPause: CharDisp waits before writing
     over the full-width combat view's two message lines only when no wait came since they were written (#1211) }
   pauseCount: Word;
@@ -101,7 +106,7 @@ function Fine: Boolean;
 { Draws count copies of a character on the 80 x 50 grid, as RenderChar's with isAscii set; nothing off the grid, or when
   the screen is not fine.
   @param(col The first copy's column, 0 to FINE_LAST_COL.)
-  @param(row The row, 0 to FINE_LAST_ROW.)
+  @param(row The row, 0 to the driver's fineLastRow.)
   @param(fg The ink color.)
   @param(bg The paper color.)
   @param(count The number of copies.)
@@ -494,7 +499,7 @@ begin
   if not GameVars.video.fine or (GameVars.gameFont = nil) then Exit;
   glyph := Ord(UpCase(Chr(ch))) mod 64;
   for i := 1 to count do
-    if (col + i - 1 <= FINE_LAST_COL) and (row <= FINE_LAST_ROW) then
+    if (col + i - 1 <= FINE_LAST_COL) and (row <= GameVars.video.fineLastRow) then
       GameVars.video.DrawFineGlyph(col + i - 1, row, fg, bg, glyph);
 end;
 
@@ -510,7 +515,7 @@ procedure FineClear(ulCol, ulRow, lrCol, lrRow: Byte);
 begin
   if not GameVars.video.fine then Exit;
   if lrCol > FINE_LAST_COL then lrCol := FINE_LAST_COL;
-  if lrRow > FINE_LAST_ROW then lrRow := FINE_LAST_ROW;
+  if lrRow > GameVars.video.fineLastRow then lrRow := GameVars.video.fineLastRow;
   if (ulCol > lrCol) or (ulRow > lrRow) then Exit;
   GameVars.video.ClearFineRect(ulCol, ulRow, lrCol, lrRow);
 end;
@@ -519,4 +524,5 @@ begin
   { Turbo Pascal clears no variable }
   pageByDelay := False;
   pauseCount := 0;
+  @stripHook := nil;
 end.

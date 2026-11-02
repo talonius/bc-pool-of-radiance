@@ -23,9 +23,13 @@ const
   FINE_INFO_TOP = 2;
   FINE_INFO_BOTTOM = 7;
   FINE_MAP_TOP = 9;
-  FINE_MAP_BOTTOM = 21;
-  FINE_LOG_TOP = 23;
+  FINE_MAP_BOTTOM = 24;
+  FINE_LOG_TOP = 26;
   FINE_LOG_BOTTOM = 43;
+  { the strip under the 640 x 400 layout on 640 x 480 squashed (CharDisp.DrawStrip), in fine rows: the party, as Gold
+    Box Companion shows it, and where the party is }
+  STRIP_TOP = 50;
+  STRIP_BOTTOM = 59;
   { the bottom-line prompt that waits for Enter, SSI's 'PRESS <RETURN> TO CONTINUE' in the port's words }
   CONTINUE_PROMPT = 'press <enter>/<return> to continue';
 

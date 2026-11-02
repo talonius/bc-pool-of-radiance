@@ -1,29 +1,42 @@
-{ The VESA video driver (#1231): VBE mode 100h, 640x400 at a byte a pixel, reached through a 64 KB window onto the
-  card's 250 KB, one bank at a time. The game's pictures and its 320 x 200 layout are VGA's (VidVga's picture layout
-  and palette), drawn 2 x 2, so they look as they do in mode 13h; the fine entries (TVideoDriver.fine) draw text and the
-  combat minimap at the screen's own pixels. There is no room in conventional memory for a copy of the screen, so
-  everything is drawn straight to the card, each scanline's run cut where it crosses a bank. Resident, as VidVga is;
-  GameBoot installs it when POOL.CFG names it (C_OPT.VIDEO_VESA), and VGA in its place when the card has no VBE or no
-  mode 100h. }
+{ The VESA video driver (#1231): VBE mode 100h (640x400) or 101h (640x480), a byte a pixel, reached through a 64 KB
+  window onto the card's memory, one bank at a time. The game's pictures and its 320 x 200 layout are VGA's (VidVga's
+  picture layout and palette), drawn 2 x 2, so they look as they do in mode 13h; the fine entries (TVideoDriver.fine)
+  draw text and the combat minimap at the screen's own pixels.
+
+  Everything is laid out on 400 lines, the layout's lines. On 640x400 they are the screen's. On 640x480 they are either
+  the top 400 of the screen's 480, the 80 under them a strip of fine rows of their own (squashed: the art 2 x 2, so
+  shorter than SSI drew it on a 4:3 display), or spread over all 480, a layout line taking one screen line or two
+  (stretched: the art 2 x 2.4, in SSI's proportions, its rows 2 and 3 lines tall by turns). There is no room in
+  conventional memory for a copy of the screen, so everything is drawn straight to the card, each scanline's run cut
+  where it crosses a bank. Resident, as VidVga is; GameBoot installs it when POOL.CFG names it (C_OPT.VIDEO_VESA,
+  VIDEO_SQUASHED, VIDEO_STRETCHED). }
 {$F+}
 {$I COMPILER.INC}
 unit VidVesa;
 
 interface
 
-{ Make this the video driver when the card offers VBE mode 100h, and say True; otherwise leave GameVars.video as it is
-  and say False. Called before any mode is set, from the text screen. }
-function Install: Boolean;
+const
+  { the modes: 640 x 400 and 640 x 480, a byte a pixel }
+  MODE_400 = $100;
+  MODE_480 = $101;
+
+{ Make this the video driver when the card offers VBE mode mode, and say True; otherwise leave GameVars.video as it is
+  and say False. Called before any mode is set, from the text screen.
+  @param(mode MODE_400 or MODE_480.)
+  @param(stretched On 640x480, spread the 400 layout lines over the 480; else they are the top 400, a strip under
+    them.)
+  @returns(True when the driver is installed.) }
+function Install(mode: Word; stretched: Boolean): Boolean;
 
 implementation
 
 uses Dos, Types, GameVars, VidVga;
 
 const
-  { the mode: 640 x 400 at a byte a pixel }
-  VESA_MODE = $100;
   SCREEN_WIDTH = 640;
-  SCREEN_HEIGHT = 400;
+  { the layout's lines (LayoutLines), whatever the screen has }
+  LAYOUT_LINES = 400;
   { the VBE functions, in AX with INT 10h: controller information, mode information, set mode, window position; and
     what AX holds after each that worked }
   VBE_INFO = $4F00;
@@ -66,6 +79,11 @@ type
   TScanline = array[0..SCREEN_WIDTH - 1] of Byte;
 
 var
+  { the mode set, and the screen's lines }
+  vesaMode: Word;
+  screenLines: Word;
+  { the layout's lines are spread over the screen's (640x480 stretched) }
+  stretch: Boolean;
   { the window the game writes through (0 A, 1 B), its segment, and the bytes a step of its position moves it }
   window: Byte;
   windowSeg: Word;
@@ -88,57 +106,54 @@ begin
   windowStart := start;
 end;
 
-{ Copy count bytes from src to the card from byte at, moving the window as the run needs: a run of a scanline crosses
-  at most one 64 KB boundary. }
-procedure PutRun(at: LongInt; var src; count: Word);
+{ Copy count bytes from src to the card from byte at, or fill them with color when src is nil, moving the window as the
+  run needs: a run of a scanline crosses at most one 64 KB boundary. }
+procedure PutRun(at: LongInt; src: Types.PByteArr; count: Word; color: Byte);
 var
-  bytes: Types.PByteArr;
   inWindow: Word;
   first: Word;
 begin
-  bytes := @src;
   while count > 0 do begin
-    if (at < windowStart) or (at >= windowStart + 65536) or (windowStart < 0) then
+    if (windowStart < 0) or (at < windowStart) or (at >= windowStart + 65536) then
       VidVesa.MoveWindow(at - at mod granuleBytes);
     inWindow := at - windowStart;
     if LongInt(inWindow) + count > 65536 then
       first := 65536 - LongInt(inWindow)
     else
       first := count;
-    Move(bytes^, Mem[windowSeg:inWindow], first);
+    if src = nil then
+      FillChar(Mem[windowSeg:inWindow], first, color)
+    else begin
+      Move(src^, Mem[windowSeg:inWindow], first);
+      src := @src^[first];
+    end;
     Inc(at, first);
     Dec(count, first);
-    bytes := @bytes^[first];
   end;
 end;
 
-{ Fill count bytes of the card from byte at with color, moving the window as PutRun does. }
-procedure FillRun(at: LongInt; count: Word; color: Byte);
+{ The run on layout line y from pixel x: on the screen line it is, or on 640x480 stretched the one or two it covers
+  (screen line y * 6 div 5 to the next line's less one). src nil fills with color, as PutRun. }
+procedure PutLine(x, y: Word; src: Types.PByteArr; count: Word; color: Byte);
 var
-  inWindow: Word;
-  first: Word;
+  line: Word;
+  next: Word;
 begin
-  while count > 0 do begin
-    if (at < windowStart) or (at >= windowStart + 65536) or (windowStart < 0) then
-      VidVesa.MoveWindow(at - at mod granuleBytes);
-    inWindow := at - windowStart;
-    if LongInt(inWindow) + count > 65536 then
-      first := 65536 - LongInt(inWindow)
-    else
-      first := count;
-    FillChar(Mem[windowSeg:inWindow], first, color);
-    Inc(at, first);
-    Dec(count, first);
+  if count = 0 then Exit;
+  if stretch then begin
+    line := LongInt(y) * 6 div 5;
+    next := LongInt(y + 1) * 6 div 5;
+  end else begin
+    line := y;
+    next := y + 1;
+  end;
+  while line < next do begin
+    VidVesa.PutRun(line * pitch + x, src, count, color);
+    Inc(line);
   end;
 end;
 
-{ The card's byte for pixel (x, y). }
-function PixelAt(x, y: Word): LongInt;
-begin
-  PixelAt := y * pitch + x;
-end;
-
-{ count pixels from src, each widened to two, onto scanlines y and y + 1 from pixel x: one 320 x 200 scanline's run,
+{ count pixels from src, each widened to two, onto layout lines y and y + 1 from pixel x: one 320 x 200 scanline's run,
   drawn 2 x 2 }
 procedure PutDoubled(x, y: Word; var src; count: Word);
 var
@@ -152,8 +167,8 @@ begin
     line[i * 2] := Byte(bytes^[i]);
     line[i * 2 + 1] := Byte(bytes^[i]);
   end;
-  VidVesa.PutRun(VidVesa.PixelAt(x, y), line, count * 2);
-  VidVesa.PutRun(VidVesa.PixelAt(x, y + 1), line, count * 2);
+  VidVesa.PutLine(x, y, @line, count * 2, 0);
+  VidVesa.PutLine(x, y + 1, @line, count * 2, 0);
 end;
 
 { the view buffer's dirty spans, each a run of a 320 x 200 scanline, drawn 2 x 2 }
@@ -184,7 +199,8 @@ begin
   end;
 end;
 
-{ A glyph's 8 x 8 bits from pixel (x, y), each bit size x size pixels: fg where it is set, bg where it is clear. }
+{ A glyph's 8 x 8 bits from pixel (x, layout line y), each bit size x size pixels: fg where it is set, bg where it is
+  clear. }
 procedure PutGlyph(x, y: Word; size, fg, bg, glyph: Byte);
 var
   line: array[0..15] of Byte;
@@ -205,7 +221,7 @@ begin
         line[k * size + i] := color;
     end;
     for i := 0 to size - 1 do
-      VidVesa.PutRun(VidVesa.PixelAt(x, y + r * size + i), line, 8 * size);
+      VidVesa.PutLine(x, y + r * size + i, @line, 8 * size, 0);
   end;
 end;
 
@@ -226,7 +242,7 @@ var
   y: Word;
 begin
   for y := ulRow * size to lrRow * size + size - 1 do
-    VidVesa.FillRun(VidVesa.PixelAt(ulCol * size, y), (lrCol - ulCol + 1) * size, 0);
+    VidVesa.PutLine(ulCol * size, y, nil, (lrCol - ulCol + 1) * size, 0);
 end;
 
 procedure ClearRect(ulCol, ulRow, lrCol, lrRow: Byte);
@@ -239,34 +255,35 @@ begin
   VidVesa.ClearCells(ulCol, ulRow, lrCol, lrRow, 8);
 end;
 
+{ every screen line, the strip under the layout's included }
 procedure ClearScreen;
 var
   y: Word;
 begin
-  for y := 0 to SCREEN_HEIGHT - 1 do
-    VidVesa.FillRun(VidVesa.PixelAt(0, y), SCREEN_WIDTH, 0);
+  for y := 0 to screenLines - 1 do
+    VidVesa.PutRun(y * pitch, nil, SCREEN_WIDTH, 0);
 end;
 
 procedure PutPixels(x, y: Word; var src; count: Word);
 begin
-  VidVesa.PutRun(VidVesa.PixelAt(x, y), src, count);
+  VidVesa.PutLine(x, y, @src, count, 0);
 end;
 
-{ Set mode 100h once the BIOS has set mode 13h (GameBoot): VBE function 4F02h, then the window back to its unknown
+{ Set the VESA mode once the BIOS has set mode 13h (GameBoot): VBE function 4F02h, then the window back to its unknown
   state, since the mode set moves it. }
 procedure Start;
 var
   regs: Registers;
 begin
   regs.ax := VBE_SET_MODE;
-  regs.bx := VESA_MODE;
+  regs.bx := vesaMode;
   Intr($10, regs);
   windowStart := -1;
 end;
 
-{ True when the card's VBE lists mode 100h and describes a window the game can write through; window, windowSeg,
+{ True when the card's VBE lists mode and describes a window the game can write through; window, windowSeg,
   granuleBytes and pitch are then set from the mode's information. }
-function FindMode: Boolean;
+function FindMode(mode: Word): Boolean;
 var
   regs: Registers;
   info: TVbeInfo;
@@ -286,13 +303,13 @@ begin
   listed := False;
   i := 0;
   while (modes^[i] <> $FFFF) and (i < 255) do begin
-    if modes^[i] = VESA_MODE then
+    if modes^[i] = mode then
       listed := True;
     Inc(i);
   end;
   if not listed then Exit;
   regs.ax := VBE_MODE_INFO;
-  regs.cx := VESA_MODE;
+  regs.cx := mode;
   regs.es := Seg(modeInfo);
   regs.di := Ofs(modeInfo);
   Intr($10, regs);
@@ -313,14 +330,25 @@ begin
   FindMode := True;
 end;
 
-function Install: Boolean;
+function Install(mode: Word; stretched: Boolean): Boolean;
 begin
   Install := False;
-  if not VidVesa.FindMode then Exit;
+  if not VidVesa.FindMode(mode) then Exit;
+  vesaMode := mode;
+  if mode = MODE_480 then
+    screenLines := 480
+  else
+    screenLines := LAYOUT_LINES;
+  stretch := stretched and (mode = MODE_480);
   { VGA's pictures and palette; the screen's own routines replace mode 13h's }
   VidVga.Install;
   with GameVars.video do begin
-    name := 'VGA 640x400';
+    if mode = MODE_400 then
+      name := 'VGA 640x400'
+    else if stretch then
+      name := 'VGA 640x480 stretched'
+    else
+      name := 'VGA 640x480 squashed';
     Start := VidVesa.Start;
     FlushSpans := VidVesa.FlushSpans;
     ShowPic := VidVesa.ShowPic;
@@ -328,6 +356,11 @@ begin
     ClearRect := VidVesa.ClearRect;
     ClearScreen := VidVesa.ClearScreen;
     fine := True;
+    { the fine grid's rows: the layout's 50, and on 640x480 squashed the strip's 10 under them }
+    if (mode = MODE_480) and not stretch then
+      fineLastRow := 59
+    else
+      fineLastRow := 49;
     DrawFineGlyph := VidVesa.DrawFineGlyph;
     ClearFineRect := VidVesa.ClearFineRect;
     PutPixels := VidVesa.PutPixels;

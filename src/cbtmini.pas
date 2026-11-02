@@ -2,7 +2,7 @@
   are blue and the creatures dots coloured by side, as their names are (CharDisp.NameColor). The Minimap setting and F3
   on the combat menu turn it on and off (GameVars.minimapOn). It is drawn while a party member's turn waits for a
   command, as it moves and as it aims, and the messages of an action write over it until the next of those. On the
-  640 x 400 screen (#1231) it is 4 pixels a cell, below the creature's details, and the messages have rows of their
+  640 x 400 screen (#1231) it is 5 pixels a cell, below the creature's details, and the messages have rows of their
   own. }
 {$O+,F+}
 {$I COMPILER.INC}
@@ -38,10 +38,11 @@ const
   CURSOR_COLOR = LightMagenta;
   { Show's cursor cell for none }
   NO_CURSOR = -1;
-  { On the 640 x 400 screen (#1231) the map is FINE_CELL_PX pixels a cell, 200 x 100, centred in the fine panel's map
+  { On the 640 x 400 screen (#1231) the map is FINE_CELL_PX pixels a cell, 250 x 125, as large as the panel's width
+    allows, centred in the fine panel's map
     cells (C_MSG.FINE_LEFT to FINE_RIGHT, FINE_MAP_TOP to FINE_MAP_BOTTOM): FINE_LEFT_PX and FINE_TOP_PX in from their
     corner. }
-  FINE_CELL_PX = 4;
+  FINE_CELL_PX = 5;
   FINE_LEFT_PX = ((C_MSG.FINE_RIGHT - C_MSG.FINE_LEFT + 1) * 8 - (Types.ARENA_LAST_X + 1) * FINE_CELL_PX) div 2;
   FINE_TOP_PX = ((C_MSG.FINE_MAP_BOTTOM - C_MSG.FINE_MAP_TOP + 1) * 8 - (Types.ARENA_LAST_Y + 1) * FINE_CELL_PX) div 2;
 

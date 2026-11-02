@@ -20,6 +20,11 @@ const
   { VGA at 640 x 400 through VESA (#1231), a prototype: the 320 x 200 art drawn 2 x 2, and some text at the screen's own
     pixels }
   VIDEO_VESA = 'H';
+  { VGA at 640 x 480 through VESA (#1231), a prototype: the 640 x 400 layout on its top 400 lines, the art 2 x 2 and so
+    squashed on a 4:3 display, with a strip of the party under it; or spread over all 480, the art 2 x 2.4 in SSI's
+    proportions, its rows 2 and 3 lines tall by turns }
+  VIDEO_SQUASHED = 'Q';
+  VIDEO_STRETCHED = 'S';
   { POOL.CFG's second line, the sound device. S is silent, as SSI's data card and the Curse port have it, and B the
     Sound Blaster (#880); START reads any other letter as silent, N included. }
   SOUND_SILENT = 'S';

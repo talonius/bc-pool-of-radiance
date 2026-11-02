@@ -44,6 +44,11 @@ procedure ClearCreatureInfo;
 { Empty the 640 x 400 screen's combat message list (#1231), at a fight's start. }
 procedure ClearFineLog;
 
+{ On 640 x 480 squashed (#1231), draw the strip under the 640 x 400 layout, as Gold Box Companion shows the party: each
+  party member's name, hit points of the most, armor class and status, the current character's name in inverse video;
+  beside them, in combat the round, else where the party is and the time. Nothing on the other screens. }
+procedure DrawStrip;
+
 { The combat messages' first column: 23 in the panel beside the 7x7 view, 1 under the full-width one (#1211). }
 function MsgLeft: Byte;
 
@@ -386,6 +391,47 @@ begin
     s := '(Helpless)';
   if s <> '' then
     TextRend.FineString(C_MSG.FINE_LEFT, C_MSG.FINE_INFO_TOP + 5, White, Black, s);
+end;
+
+procedure DrawStrip;
+var
+  p: Types.PCharRecord;
+  row: Byte;
+  color: Byte;
+begin
+  if GameVars.video.fineLastRow < C_MSG.STRIP_BOTTOM then Exit;
+  TextRend.FineClear(0, C_MSG.STRIP_TOP, TextRend.FINE_LAST_COL, C_MSG.STRIP_BOTTOM);
+  TextRend.FineString(2, C_MSG.STRIP_TOP, White, Black, 'Name');
+  TextRend.FineString(20, C_MSG.STRIP_TOP, White, Black, 'HP');
+  TextRend.FineString(30, C_MSG.STRIP_TOP, White, Black, 'AC');
+  TextRend.FineString(35, C_MSG.STRIP_TOP, White, Black, 'Status');
+  row := C_MSG.STRIP_TOP + 1;
+  p := GameVars.creatureList;
+  while (p <> nil) and (row <= C_MSG.STRIP_BOTTOM) do begin
+    if p^.hostile = 0 then begin
+      if p = GameVars.curChar then begin
+        TextRend.FineString(0, row, White, Black, '>');
+        TextRend.FineString(2, row, Black, CharDisp.NameColor(p), p^.name);
+      end else
+        TextRend.FineString(2, row, CharDisp.NameColor(p), Black, p^.name);
+      if p^.hpCur < p^.hpMax then
+        color := Yellow
+      else
+        color := LightGreen;
+      TextRend.FineString(20, row, color, Black, StrUtil.NumStr(p^.hpCur) + '/' + StrUtil.NumStr(p^.hpMax));
+      TextRend.FineString(30, row, LightGreen, Black, CharDisp.ArmorClassText(p));
+      TextRend.FineString(35, row, White, Black, GameDefs.statusNames[p^.status]);
+      Inc(row);
+    end;
+    p := p^.nextCharAddr;
+  end;
+  if GameVars.ifcState = C_IFC.IN_COMBAT then
+    TextRend.FineString(52, C_MSG.STRIP_TOP, White, Black, 'Combat, round ' +
+                        StrUtil.NumStr(GameVars.roundCounter + 1))
+  else begin
+    TextRend.FineString(52, C_MSG.STRIP_TOP, White, Black, 'Where');
+    TextRend.FineString(52, C_MSG.STRIP_TOP + 1, LightGreen, Black, CharDisp.MiscInfoText);
+  end;
 end;
 
 function MsgLeft: Byte;

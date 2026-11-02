@@ -378,6 +378,8 @@ begin
   done := False;
   frameTick := TextRend.GetTicks;
   waitStart := frameTick;
+  if isFine and (@TextRend.stripHook <> nil) then
+    TextRend.stripHook;
   PutQuery;
   qLen := Length(query);
   DisplayOption(GameVars.horizChoice);

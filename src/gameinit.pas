@@ -440,6 +440,7 @@ begin
   GameInit.InitEffectHandlers;
   CbtMap.boltTracer := Magic.TraceBolt;
   CbtMap.aimReport := CbtActs.ReportAreaCatch;
+  TextRend.stripHook := CharDisp.DrawStrip;
   GameIo.showMemory := MemShow.ShowMemory;
   CharHlp.faultHook := CharDisp.ShowFault;
   EclVars.diskHook := DaxIo.PushState;

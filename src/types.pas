@@ -865,7 +865,7 @@ type
   TDrawGlyphProc = procedure(col, row, fg, bg, glyph: Byte);
   TClearRectProc = procedure(ulCol, ulRow, lrCol, lrRow: Byte);
   TWriteCharProc = procedure(col, row, attr, count, ch: Byte);
-  { count pixels from src onto the 640 x 400 screen from pixel (x, y) rightwards, on one scanline }
+  { count pixels from src onto the fine screen from pixel (x, layout line y) rightwards }
   TPutPixelsProc = procedure(x, y: Word; var src; count: Word);
   { An 8-pixel cell row as DAX stores it: two pixels to a byte, the first in the high nibble. }
   TChunk = array[0..3] of Byte;
@@ -952,14 +952,18 @@ type
     InitRowTables: TVideoProc;
     { give palette register registerIndex the colour color (Blit.SetPaletteRegister; EGA's registers, VGA's DAC) }
     SetPalette: TSetPaletteProc;
-    { The screen is 640 x 400 (VidVesa, #1231): the entries above draw the 320 x 200 layout at 2 x 2, and these draw at
-      the screen's own pixels, its text on an 80 x 50 grid of 8 x 8 cells. Clear, and these nil, in the other modes. }
+    { The screen is 640 x 400 or 640 x 480 (VidVesa, #1231): the entries above draw the 320 x 200 layout at 2 x 2, and
+      these draw at the screen's own pixels, on 400 layout lines, its text on an 80 x 50 grid of 8 x 8 cells. Clear,
+      and these nil, in the other modes. }
     fine: Boolean;
+    { the fine grid's last row: 49 on the 640 x 400 layout, 59 where a strip of 10 rows lies under it (640 x 480
+      squashed) }
+    fineLastRow: Byte;
     { a glyph in a cell of the 80 x 50 grid, as DrawGlyph's }
     DrawFineGlyph: TDrawGlyphProc;
     { clear a rectangle of the 80 x 50 grid, already checked to lie on it, to black }
     ClearFineRect: TClearRectProc;
-    { a run of pixels on one scanline of the 640 x 400 screen (CbtMini's map) }
+    { a run of pixels on one layout line of the screen (CbtMini's map) }
     PutPixels: TPutPixelsProc;
   end;
 
