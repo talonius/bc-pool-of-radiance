@@ -252,6 +252,8 @@ begin
     PutPixelRow := PicEga.PutPixelRow;
     InitRowTables := PicEga.InitRowTables;
     SetPalette := VidEga.SetPalette;
+    { the 320 x 200 screen: no fine entries (VidVesa's) }
+    fine := False;
   end;
 end;
 

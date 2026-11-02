@@ -88,6 +88,7 @@ begin
   GameVars.ifcState := C_IFC.IN_COMBAT;
   GameVars.castTargetMenu := CbtActs.SelectCombatTargets;
   CbtLog.Clear(GameVars.combatLogLines, GameVars.combatLogOn <> 0);
+  CharDisp.ClearFineLog;
   CombatSt.CombatStart;
   done := False;
   endNoticed := False;

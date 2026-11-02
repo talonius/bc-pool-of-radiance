@@ -17,6 +17,9 @@ const
   VIDEO_EGA = 'E';
   VIDEO_TANDY = 'T';
   VIDEO_VGA = 'V';
+  { VGA at 640 x 400 through VESA (#1231), a prototype: the 320 x 200 art drawn 2 x 2, and some text at the screen's own
+    pixels }
+  VIDEO_VESA = 'H';
   { POOL.CFG's second line, the sound device. S is silent, as SSI's data card and the Curse port have it, and B the
     Sound Blaster (#880); START reads any other letter as silent, N included. }
   SOUND_SILENT = 'S';

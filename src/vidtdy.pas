@@ -117,6 +117,8 @@ begin
     PutPixelRow := PicTdy.PutPixelRow;
     InitRowTables := PicTdy.InitRowTables;
     SetPalette := VidTdy.SetPalette;
+    { the 320 x 200 screen: no fine entries (VidVesa's) }
+    fine := False;
   end;
 end;
 

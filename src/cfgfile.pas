@@ -689,7 +689,7 @@ begin
       letter := ' ';
     known := not missing;
     case lineNo of
-      1: if letter in [C_OPT.VIDEO_CGA, C_OPT.VIDEO_EGA, C_OPT.VIDEO_TANDY, C_OPT.VIDEO_VGA] then
+      1: if letter in [C_OPT.VIDEO_CGA, C_OPT.VIDEO_EGA, C_OPT.VIDEO_TANDY, C_OPT.VIDEO_VGA, C_OPT.VIDEO_VESA] then
            c.video := letter
          else
            known := False;

@@ -32,11 +32,17 @@ procedure LogCreatureName(creature: Types.PCharRecord);
 
 { Show the creature's name, hit points, armor class, equipped weapon and status: in the panel beside the 7x7 combat
   view, or on one line under the full-width one (#1211), the name in its colour, then HP, AC, and the status of one out
-  of action or helpless, else the weapon, cut to the line. Either way the messages are cleared. }
+  of action or helpless, else the weapon, cut to the line. Either way the messages are cleared. On the 640 x 400 screen
+  (#1231) each is on a line of its own, the hit points out of the most, above the minimap, and the messages stay: there
+  they are a list of the latest, an action's parts on one line, which the message routines here add to. }
 procedure CombatPrintCreatureInfo(creature: Types.PCharRecord);
 
-{ Clear what CombatPrintCreatureInfo shows, with the messages. }
+{ Clear what CombatPrintCreatureInfo shows, with the messages; on the 640 x 400 screen (#1231), the details and the
+  minimap, the messages being kept. }
 procedure ClearCreatureInfo;
+
+{ Empty the 640 x 400 screen's combat message list (#1231), at a fight's start. }
+procedure ClearFineLog;
 
 { The combat messages' first column: 23 in the panel beside the 7x7 view, 1 under the full-width one (#1211). }
 function MsgLeft: Byte;
@@ -133,8 +139,9 @@ procedure ShowFault(msg: Types.TStr40);
 
 implementation
 
-uses CharHlp, Crt, C_AREA, C_MSG, GameDefs, GameVars, MenuCore, MapView, Pathing, CbtMap, C_EQUIP, C_KEYS, C_IFC, Blit,
-  Border, Portrait, SoundDrv, C_SOUND, C_SPELL, TextRend, Wilds, StrUtil, C_GBVM, Party, C_DIR, CbtLog, JrnlSeen;
+uses {$IFDEF FPC}TpCompat, {$ENDIF}CharHlp, Crt, C_AREA, C_MSG, GameDefs, GameVars, MenuCore, MapView, Pathing, CbtMap,
+  C_EQUIP, C_KEYS, C_IFC, Blit, Border, Portrait, SoundDrv, C_SOUND, C_SPELL, TextRend, Wilds, StrUtil, C_GBVM, Party,
+  C_DIR, CbtLog, JrnlSeen;
 
 const
   { the full-width combat view's text lines (#1211): the creature's, then the messages' first; the last is
@@ -142,9 +149,26 @@ const
   WIDE_INFO_ROW = 19;
   WIDE_MSG_TOP = 20;
 
+type
+  { a line of the 640 x 400 screen's combat messages (#1231): its text, a colour change being CbtLog.COLOR_MARK and the
+    colour; the characters it shows, and the colour its last piece is in }
+  TFineLine = record
+    text: string[(C_MSG.FINE_RIGHT - C_MSG.FINE_LEFT + 1) * 3];
+    shown: Byte;
+    color: Byte;
+  end;
+  { the messages the panel shows, oldest first: count of them }
+  TFineLog = record
+    count: Byte;
+    lines: array[1..C_MSG.FINE_LOG_BOTTOM - C_MSG.FINE_LOG_TOP + 1] of TFineLine;
+  end;
+  PFineLog = ^TFineLog;
+
 var
   { the bottom message window's top row, from MessageText's first part for the parts after it }
   messageTop: Byte;
+  { the 640 x 400 screen's combat messages, taken from the heap when the first is shown; nil before }
+  fineLog: PFineLog;
   { TextRend.pauseCount when the full-width combat view's message lines were last written (NoteWideMsg) }
   wideMsgPauses: Word;
 
@@ -213,6 +237,155 @@ begin
   CharDisp.DisplayCreatureName(creature, C_MSG.TEXT_LEFT, row, False);
   GameVars.curCol := C_MSG.TEXT_LEFT + Length(creature^.name) + 1;
   GameVars.curRow := row;
+end;
+
+function NameColor(creature: Types.PCharRecord): Byte; forward;
+
+function ArmorClassText(creature: Types.PCharRecord): Types.TStr40; forward;
+
+{ True when the combat panel is drawn on the 640 x 400 screen's own grid (#1231): in combat beside the 7x7 view. }
+function FinePanel: Boolean;
+begin
+  FinePanel := TextRend.Fine and not CbtMap.wideLayout and (GameVars.ifcState = C_IFC.IN_COMBAT);
+end;
+
+procedure ClearFineLog;
+begin
+  if fineLog <> nil then
+    fineLog^.count := 0;
+end;
+
+{ Draw the fine panel's messages, the oldest at the top, each piece in its colour, and blank the rows under them. }
+procedure DrawFineLog;
+var
+  n: Byte;
+  i: Byte;
+  col: Byte;
+  color: Byte;
+  run: string;
+begin
+  TextRend.FineClear(C_MSG.FINE_LEFT, C_MSG.FINE_LOG_TOP, C_MSG.FINE_RIGHT, C_MSG.FINE_LOG_BOTTOM);
+  if fineLog = nil then Exit;
+  for n := 1 to fineLog^.count do
+    with fineLog^.lines[n] do begin
+      col := C_MSG.FINE_LEFT;
+      color := LightGreen;
+      run := '';
+      i := 1;
+      while i <= Length(text) + 1 do
+        if (i > Length(text)) or (text[i] = CbtLog.COLOR_MARK) then begin
+          TextRend.FineString(col, C_MSG.FINE_LOG_TOP + n - 1, color, Black, run);
+          Inc(col, Length(run));
+          run := '';
+          if i < Length(text) then
+            color := Ord(text[i + 1]);
+          Inc(i, 2);
+        end else begin
+          run := run + text[i];
+          Inc(i);
+        end;
+    end;
+end;
+
+{ Start a line of the fine panel's messages, the oldest dropped when they are full; the list is taken from the heap
+  first, and nothing is kept without the memory for it. }
+procedure NewFineLine;
+begin
+  if fineLog = nil then begin
+    if MaxAvail < SizeOf(TFineLog) + 1024 then Exit;
+    GetMem(fineLog, SizeOf(TFineLog));
+    fineLog^.count := 0;
+  end;
+  with fineLog^ do begin
+    if count = SizeOf(lines) div SizeOf(lines[1]) then begin
+      Move(lines[2], lines[1], SizeOf(lines) - SizeOf(lines[1]));
+      Dec(count);
+    end;
+    Inc(count);
+    lines[count].text := '';
+    lines[count].shown := 0;
+    lines[count].color := 0;
+  end;
+end;
+
+{ Add s in ink to the fine panel's messages: on a line of its own when newLine is set, else after the last line's
+  text, a space between; word-wrapped to the panel's width, a word wider than it split. }
+procedure AddFineText(ink: Byte; s: string; newLine: Boolean);
+var
+  width: Byte;
+  piece: string;
+  { an Integer, so it can step past a 255-character s }
+  i: Integer;
+  gap: Byte;
+begin
+  width := C_MSG.FINE_RIGHT - C_MSG.FINE_LEFT + 1;
+  if newLine or (fineLog = nil) then
+    CharDisp.NewFineLine
+  else if fineLog^.count = 0 then
+    CharDisp.NewFineLine;
+  if fineLog = nil then Exit;
+  i := 1;
+  while i <= Length(s) do begin
+    { the next word, a line's width at most }
+    while (i <= Length(s)) and (s[i] = ' ') do
+      Inc(i);
+    piece := '';
+    while (i <= Length(s)) and (s[i] <> ' ') and (Length(piece) < width) do begin
+      piece := piece + s[i];
+      Inc(i);
+    end;
+    if piece <> '' then
+      with fineLog^ do begin
+        gap := Ord(lines[count].shown > 0);
+        if lines[count].shown + gap + Length(piece) > width then begin
+          CharDisp.NewFineLine;
+          gap := 0;
+        end;
+        with lines[count] do begin
+          if gap > 0 then
+            text := text + ' ';
+          if color <> ink then begin
+            text := text + CbtLog.COLOR_MARK + Chr(ink);
+            color := ink;
+          end;
+          text := text + piece;
+          Inc(shown, gap + Length(piece));
+        end;
+      end;
+  end;
+end;
+
+{ CombatPrintCreatureInfo on the 640 x 400 screen (#1231): the name, then hit points of the most, armor class, the
+  weapon and the status of one out of action or helpless, each on a line of its own. }
+procedure FineCreatureInfo(creature: Types.PCharRecord);
+var
+  hpColor: Byte;
+  s: string;
+begin
+  CharDisp.ClearCreatureInfo;
+  TextRend.FineString(C_MSG.FINE_LEFT, C_MSG.FINE_INFO_TOP, CharDisp.NameColor(creature), Black, creature^.name);
+  if creature^.hpCur < creature^.hpMax then
+    hpColor := Yellow
+  else
+    hpColor := LightGreen;
+  TextRend.FineString(C_MSG.FINE_LEFT, C_MSG.FINE_INFO_TOP + 2, LightGreen, Black, 'Hitpoints');
+  TextRend.FineString(C_MSG.FINE_LEFT + 12, C_MSG.FINE_INFO_TOP + 2, hpColor, Black,
+                      StrUtil.NumStr(creature^.hpCur) + ' of ' + StrUtil.NumStr(creature^.hpMax));
+  TextRend.FineString(C_MSG.FINE_LEFT, C_MSG.FINE_INFO_TOP + 3, LightGreen, Black, 'Armor class');
+  TextRend.FineString(C_MSG.FINE_LEFT + 12, C_MSG.FINE_INFO_TOP + 3, LightGreen, Black,
+                      CharDisp.ArmorClassText(creature));
+  if creature^.equipped[C_EQUIP.WEAPON] <> nil then begin
+    CharHlp.ItemLabel(creature^.equipped[C_EQUIP.WEAPON], False);
+    TextRend.FineString(C_MSG.FINE_LEFT, C_MSG.FINE_INFO_TOP + 4, LightGreen, Black,
+                        creature^.equipped[C_EQUIP.WEAPON]^.name);
+  end;
+  s := '';
+  if creature^.enabled = 0 then
+    s := GameDefs.statusNames[creature^.status]
+  else if CharHlp.IsHelpless(creature) then
+    s := '(Helpless)';
+  if s <> '' then
+    TextRend.FineString(C_MSG.FINE_LEFT, C_MSG.FINE_INFO_TOP + 5, White, Black, s);
 end;
 
 function MsgLeft: Byte;
@@ -347,7 +520,9 @@ end;
 
 procedure ClearCreatureInfo;
 begin
-  if CbtMap.wideLayout then begin
+  if CharDisp.FinePanel then
+    TextRend.FineClear(C_MSG.FINE_LEFT, C_MSG.FINE_INFO_TOP, C_MSG.FINE_RIGHT, C_MSG.FINE_MAP_BOTTOM)
+  else if CbtMap.wideLayout then begin
     Border.ClearBox(C_MSG.TEXT_LEFT, WIDE_INFO_ROW, C_MSG.TEXT_RIGHT, C_MSG.COMBAT_BOTTOM);
     GameVars.curCol := C_MSG.TEXT_LEFT;
     GameVars.curRow := WIDE_MSG_TOP;
@@ -359,6 +534,10 @@ procedure CombatPrintCreatureInfo(creature: Types.PCharRecord);
 var
   row: Byte;
 begin
+  if CharDisp.FinePanel then begin
+    CharDisp.FineCreatureInfo(creature);
+    Exit;
+  end;
   if CbtMap.wideLayout then begin
     CharDisp.WideCreatureInfo(creature);
     Exit;
@@ -447,7 +626,11 @@ begin
       CbtLog.NextLine;
       CbtLog.Add(LightGreen, s);
     end;
-    if CbtMap.wideLayout then begin
+    if CharDisp.FinePanel then begin
+      CharDisp.AddFineText(CharDisp.NameColor(creature), creature^.name, True);
+      CharDisp.AddFineText(LightGreen, s, False);
+      CharDisp.DrawFineLog;
+    end else if CbtMap.wideLayout then begin
       row := CharDisp.NextMsgRow(row);
       Border.ClearBox(C_MSG.TEXT_LEFT, row, C_MSG.TEXT_RIGHT, C_MSG.COMBAT_BOTTOM);
       CharDisp.WideMsgName(creature, row);
@@ -472,7 +655,11 @@ end;
 
 procedure PrintNameLine(creature: Types.PCharRecord; s: string; row: Byte);
 begin
-  if CbtMap.wideLayout then begin
+  if CharDisp.FinePanel then begin
+    CharDisp.AddFineText(CharDisp.NameColor(creature), creature^.name, False);
+    CharDisp.AddFineText(LightGreen, s, False);
+    CharDisp.DrawFineLog;
+  end else if CbtMap.wideLayout then begin
     CharDisp.WideMsgName(creature, CharDisp.NextMsgRow(row));
     CharDisp.WideMsgText(s, LightGreen);
   end else begin
@@ -483,7 +670,10 @@ end;
 
 procedure PrintMsgTail(s: string; color, row: Byte);
 begin
-  if not CbtMap.wideLayout then
+  if CharDisp.FinePanel then begin
+    CharDisp.AddFineText(color, s, False);
+    CharDisp.DrawFineLog;
+  end else if not CbtMap.wideLayout then
     TextRend.DisplayString(C_MSG.COMBAT_LEFT, row, color, s)
   else if GameVars.curCol <= C_MSG.TEXT_LEFT then
     CharDisp.WideMsgText(s, color)
@@ -504,7 +694,10 @@ begin
     if first then
       CbtLog.NewEntry;
     CbtLog.Add(color, s);
-    if CbtMap.wideLayout then begin
+    if CharDisp.FinePanel then begin
+      CharDisp.AddFineText(color, s, first);
+      CharDisp.DrawFineLog;
+    end else if CbtMap.wideLayout then begin
       if first then
         CharDisp.ClearWideMsg;
       CharDisp.WideMsgText(s, color);
@@ -550,11 +743,14 @@ begin
 end;
 
 { Clear whichever message window is active (combat or bottom), leaving its border alone; under the full-width combat
-  view, the two message lines, with the cursor at the start of the first. }
+  view, the two message lines, with the cursor at the start of the first. The 640 x 400 screen's combat messages are a
+  list of the latest, and stay (#1231). }
 procedure ClearMessageWindow;
 begin
   if GameVars.ifcState <> C_IFC.IN_COMBAT then
     Border.ClearBox(C_MSG.TEXT_LEFT, C_MSG.MESSAGE_TOP + 1, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM)
+  else if CharDisp.FinePanel then
+    { the 640 x 400 screen's messages stay, a list of the latest (#1231) }
   else if CbtMap.wideLayout then
     CharDisp.ClearWideMsg
   else
@@ -1003,6 +1199,8 @@ begin
     Border.DrawWindow(C_MSG.COMBAT_LEFT, 1, C_MSG.TEXT_RIGHT, C_MSG.COMBAT_BOTTOM, 0, Black, '');
   end;
   Border.ClearBox(0, 23, 39, 24);
+  if CharDisp.FinePanel then
+    CharDisp.DrawFineLog;
   CbtMap.ScrollView(CbtMap.CenterX, CbtMap.CenterY, 255, 8);
 end;
 
@@ -1061,4 +1259,5 @@ begin
   { Turbo Pascal clears no variable }
   portraitHeadId := 0;
   portraitBodyId := 0;
+  fineLog := nil;
 end.

@@ -91,7 +91,7 @@ procedure DrawMore(leftCol, rightCol, row: Byte);
   reinterpret under memberKeysToCaller. The picture animates when animate is set or the GBVM menuAnimation flag is
   nonzero (that flag also advances a frame every pass and is cleared on exit). In the demo (GameVars.demoMode) it
   waits for nothing: it returns #0 at once, as for Escape, and ends the demo (GameIo.ReadGameKey). }
-function MenuHorizontal(query, menu: Types.TStr40; qCol, mCol, hlCol: Byte; reinterpret, animate: Boolean;
+function MenuHorizontal(query, menu: Types.TStr80; qCol, mCol, hlCol: Byte; reinterpret, animate: Boolean;
                         var ext: Boolean): Char;
 
 { Vertical list menu in the box ulCol,ulRow..lrCol,lrRow with menu (plus Next/Prev/Exit as they apply) on the bottom
@@ -186,9 +186,38 @@ begin
   TextRend.DisplayCentered(leftCol, rightCol, row, White, '(more)');
 end;
 
+{ menu with the words a 40-column line shortens spelled out, for the 640 x 400 screen's 80 columns (#1231): each word
+  keeps its first letter, and so its hotkey, where the shortened word has it. }
+function SpellOut(menu: Types.TStr80): Types.TStr80;
+const
+  SHORT_WORDS: array[1..7] of string[4] = ('Jrnl', 'Char', 'Mins', 'Inc', 'Dec', 'Prev', 'Cler');
+  FULL_WORDS: array[1..7] of string[9] = ('Journal', 'Character', 'Minutes', 'Increase', 'Decrease', 'Previous',
+    'Cleric');
+var
+  spelled: string;
+  piece: string;
+  i: Byte;
+  k: Byte;
+begin
+  spelled := '';
+  piece := '';
+  for i := 1 to Length(menu) + 1 do
+    if (i > Length(menu)) or (menu[i] = ' ') then begin
+      for k := 1 to 7 do
+        if piece = SHORT_WORDS[k] then
+          piece := FULL_WORDS[k];
+      spelled := spelled + piece;
+      if i <= Length(menu) then
+        spelled := spelled + ' ';
+      piece := '';
+    end else
+      piece := piece + menu[i];
+  SpellOut := spelled;
+end;
+
 { Highlight the menu's choice characters and select an item by keypress. With takeOption, Enter returns the current
   option's hotkey, as Curse does; without it, or when the menu has no options, Enter returns #13. }
-function HorizontalMenu(query, menu: Types.TStr40; qCol, mCol, hlCol: Byte; reinterpret, animate, takeOption: Boolean;
+function HorizontalMenu(query, menu: Types.TStr80; qCol, mCol, hlCol: Byte; reinterpret, animate, takeOption: Boolean;
                         var ext: Boolean): Char;
 const
   { keypad digits 1..9 to scan codes, indexed by Ord(ch) - Ord('1') }
@@ -206,10 +235,14 @@ var
   enterOk: Boolean;
   { when the wait for a key began, for menuTimeout }
   waitStart: LongInt;
+  { the screen is 640 x 400: the line is drawn on its 80-column grid (TextRend.Fine) }
+  isFine: Boolean;
+  { the line's last column }
+  lastCol: Byte;
 
   { Split the menu into options: each starts at a digit or capital letter and ends two characters before the next one,
     the last at the end of the menu. There are at most 20 options (opt's size); the 20th runs to the end of the menu. }
-  procedure ParseMenu(m: Types.TStr40);
+  procedure ParseMenu(m: Types.TStr80);
   var
     idx: Byte;
     i: Byte;
@@ -242,6 +275,25 @@ var
     OptionAt := j;
   end;
 
+  { Draw count copies of ch from column col of the line, in fg on bg. }
+  procedure PutChar(col, fg, bg, count, ch: Byte);
+  begin
+    if isFine then
+      TextRend.FineChar(col, TextRend.FINE_BOTTOM_ROW, fg, bg, count, ch)
+    else
+      TextRend.RenderChar(col, 24, fg, bg, count, ch, 1);
+  end;
+
+  { Draw the query at the start of the line; on the fine screen, the 320 x 200 layout's row 24 is blanked first. }
+  procedure PutQuery;
+  begin
+    if isFine then begin
+      TextRend.FineClear(0, TextRend.FINE_BOTTOM_ROW, TextRend.FINE_LAST_COL, TextRend.FINE_BOTTOM_ROW + 1);
+      TextRend.FineString(0, TextRend.FINE_BOTTOM_ROW, qCol, Black, query);
+    end else if Length(query) <> 0 then
+      TextRend.DisplayString(0, 24, qCol, query);
+  end;
+
   { Draw the menu after the query with option cur in inverse video (black on hlCol), the other hotkeys in hlCol (but
     not an unmarked option's) and the rest in mCol, then blank the rest of the line. The inverse covers the whole
     option, from the start of the word holding cur's hotkey to the end of its last word (StrUtil.OptionSpan): a hotkey
@@ -266,22 +318,21 @@ var
       for i := 1 to mLen do
         if (hlFirst <= i) and (hlLast >= i)
            and (hlCol <> 0) then
-          TextRend.RenderChar(qLen + i - 1, 24, Black, hlCol, 1, Ord(menu[i]), 1)
+          PutChar(qLen + i - 1, Black, hlCol, 1, Ord(menu[i]))
         else if (menu[i] in ['0'..'9', 'A'..'Z']) and not (OptionAt(i) in unmarked) then
-          TextRend.RenderChar(qLen + i - 1, 24, hlCol, Black, 1, Ord(menu[i]), 1)
+          PutChar(qLen + i - 1, hlCol, Black, 1, Ord(menu[i]))
         else
-          TextRend.RenderChar(qLen + i - 1, 24, mCol, Black, 1, Ord(menu[i]), 1);
-      { columns qLen + mLen..39 are blanked, so a 39-column line still clears column 39 }
-      if qLen + mLen <= 39 then
-        TextRend.RenderChar(qLen + mLen, 24, Black, Black, 39 - mLen - qLen + 1, 32, 1);
+          PutChar(qLen + i - 1, mCol, Black, 1, Ord(menu[i]));
+      { columns qLen + mLen..lastCol are blanked, so a line one short of the screen still clears its last column }
+      if qLen + mLen <= lastCol then
+        PutChar(qLen + mLen, Black, Black, lastCol - mLen - qLen + 1, 32);
     end;
   end;
 
   { Draw the query and the menu again, after a message over them. }
   procedure RedrawLine;
   begin
-    if Length(query) <> 0 then
-      TextRend.DisplayString(0, 24, qCol, query);
+    PutQuery;
     DisplayOption(GameVars.horizChoice);
   end;
 
@@ -311,6 +362,12 @@ var
   end;
 
 begin
+  isFine := TextRend.Fine;
+  if isFine then begin
+    lastCol := TextRend.FINE_LAST_COL;
+    menu := MenuCore.SpellOut(menu);
+  end else
+    lastCol := 39;
   enterOk := (mCol <> 0) or (hlCol <> 0);
   ParseMenu(menu);
   if (GameVars.horizChoice < 1) or (GameVars.horizChoice > optCnt) then
@@ -321,8 +378,7 @@ begin
   done := False;
   frameTick := TextRend.GetTicks;
   waitStart := frameTick;
-  if Length(query) <> 0 then
-    TextRend.DisplayString(0, 24, qCol, query);
+  PutQuery;
   qLen := Length(query);
   DisplayOption(GameVars.horizChoice);
   repeat
@@ -437,7 +493,7 @@ begin
   HorizontalMenu := ch;
 end;
 
-function MenuHorizontal(query, menu: Types.TStr40; qCol, mCol, hlCol: Byte; reinterpret, animate: Boolean;
+function MenuHorizontal(query, menu: Types.TStr80; qCol, mCol, hlCol: Byte; reinterpret, animate: Boolean;
                         var ext: Boolean): Char;
 begin
   MenuHorizontal := MenuCore.HorizontalMenu(query, menu, qCol, mCol, hlCol, reinterpret, animate, True, ext);

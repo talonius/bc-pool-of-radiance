@@ -15,6 +15,17 @@ const
   COMBAT_LEFT = 23;
   COMBAT_MESSAGE_TOP = 10;
   COMBAT_BOTTOM = 21;
+  { The combat panel on the 640 x 400 screen (#1231), in cells of its 80 x 50 grid inside the panel window's border,
+    from FINE_LEFT to FINE_RIGHT: the creature's details from FINE_INFO_TOP to FINE_INFO_BOTTOM, the minimap from
+    FINE_MAP_TOP to FINE_MAP_BOTTOM, and the messages, the newest last, from FINE_LOG_TOP to FINE_LOG_BOTTOM. }
+  FINE_LEFT = 46;
+  FINE_RIGHT = 77;
+  FINE_INFO_TOP = 2;
+  FINE_INFO_BOTTOM = 7;
+  FINE_MAP_TOP = 9;
+  FINE_MAP_BOTTOM = 21;
+  FINE_LOG_TOP = 23;
+  FINE_LOG_BOTTOM = 43;
   { the bottom-line prompt that waits for Enter, SSI's 'PRESS <RETURN> TO CONTINUE' in the port's words }
   CONTINUE_PROMPT = 'press <enter>/<return> to continue';
 

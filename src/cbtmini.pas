@@ -1,14 +1,16 @@
 { The combat minimap (#1210): the whole 50 x 25 cell arena, 2 pixels a cell, in the bottom of the combat panel. Walls
   are blue and the creatures dots coloured by side, as their names are (CharDisp.NameColor). The Minimap setting and F3
   on the combat menu turn it on and off (GameVars.minimapOn). It is drawn while a party member's turn waits for a
-  command, as it moves and as it aims, and the messages of an action write over it until the next of those. }
+  command, as it moves and as it aims, and the messages of an action write over it until the next of those. On the
+  640 x 400 screen (#1231) it is 4 pixels a cell, below the creature's details, and the messages have rows of their
+  own. }
 {$O+,F+}
 {$I COMPILER.INC}
 unit CbtMini;
 
 interface
 
-uses Crt, Types;
+uses Crt, Types, C_MSG;
 
 const
   { the text cells the map is drawn in: columns 24 to 36 and rows 15 to 21 of the panel (23,1)-(38,21), below the
@@ -36,6 +38,12 @@ const
   CURSOR_COLOR = LightMagenta;
   { Show's cursor cell for none }
   NO_CURSOR = -1;
+  { On the 640 x 400 screen (#1231) the map is FINE_CELL_PX pixels a cell, 200 x 100, centred in the fine panel's map
+    cells (C_MSG.FINE_LEFT to FINE_RIGHT, FINE_MAP_TOP to FINE_MAP_BOTTOM): FINE_LEFT_PX and FINE_TOP_PX in from their
+    corner. }
+  FINE_CELL_PX = 4;
+  FINE_LEFT_PX = ((C_MSG.FINE_RIGHT - C_MSG.FINE_LEFT + 1) * 8 - (Types.ARENA_LAST_X + 1) * FINE_CELL_PX) div 2;
+  FINE_TOP_PX = ((C_MSG.FINE_MAP_BOTTOM - C_MSG.FINE_MAP_TOP + 1) * 8 - (Types.ARENA_LAST_Y + 1) * FINE_CELL_PX) div 2;
 
 type
   { a colour for each arena cell, [y, x] as TArena.cells }
@@ -53,8 +61,8 @@ function PixelColor(var grid: TMiniGrid; px, py: Byte): Byte;
 
 { Draw the map in the panel when the Minimap setting is on and the game is in combat beside the 7x7 view (the
   full-width one, #1211, has no panel), current being the creature whose turn it is and (cursorX, cursorY) the aim
-  cursor's cell (NO_CURSOR for none). Its buffers are taken for the drawing only; without the memory for them nothing
-  is drawn. }
+  cursor's cell (NO_CURSOR for none); on the 640 x 400 screen, at FINE_CELL_PX pixels a cell (#1231). Its buffers are
+  taken for the drawing only; without the memory for them nothing is drawn. }
 procedure Show(current: Types.PCharRecord; cursorX, cursorY: ShortInt);
 
 implementation
@@ -126,6 +134,36 @@ begin
     PixelColor := grid[(py - TOP_PX) div CELL_PX, (px - LEFT_PX) div CELL_PX];
 end;
 
+{ Draw the map from grid at the screen's own pixels, FINE_CELL_PX a cell, filling the fine panel's map cells (#1231): a
+  scanline at a time, the margins black. }
+procedure ShowFine(var grid: TMiniGrid);
+var
+  line: array[0..(C_MSG.FINE_RIGHT - C_MSG.FINE_LEFT + 1) * 8 - 1] of Byte;
+  x: Byte;
+  y: Integer;
+  i: Byte;
+  py: Word;
+  top: Word;
+begin
+  top := C_MSG.FINE_MAP_TOP * 8;
+  for y := -1 to Types.ARENA_LAST_Y + 1 do begin
+    FillChar(line, SizeOf(line), FLOOR_COLOR);
+    { row -1 is the margin above the map, and ARENA_LAST_Y + 1 the one below }
+    if (y >= 0) and (y <= Types.ARENA_LAST_Y) then
+      for x := 0 to Types.ARENA_LAST_X do
+        FillChar(line[FINE_LEFT_PX + x * FINE_CELL_PX], FINE_CELL_PX, grid[y, x]);
+    if y < 0 then
+      for i := 0 to FINE_TOP_PX - 1 do
+        GameVars.video.PutPixels(C_MSG.FINE_LEFT * 8, top + i, line, SizeOf(line))
+    else if y > Types.ARENA_LAST_Y then
+      for py := top + FINE_TOP_PX + (Types.ARENA_LAST_Y + 1) * FINE_CELL_PX to C_MSG.FINE_MAP_BOTTOM * 8 + 7 do
+        GameVars.video.PutPixels(C_MSG.FINE_LEFT * 8, py, line, SizeOf(line))
+    else
+      for i := 0 to FINE_CELL_PX - 1 do
+        GameVars.video.PutPixels(C_MSG.FINE_LEFT * 8, top + FINE_TOP_PX + y * FINE_CELL_PX + i, line, SizeOf(line));
+  end;
+end;
+
 procedure Show(current: Types.PCharRecord; cursorX, cursorY: ShortInt);
 var
   grid: PMiniGrid;
@@ -139,6 +177,14 @@ begin
   { the full-width combat view has no panel to draw it in (#1211) }
   if (GameVars.minimapOn = 0) or (GameVars.ifcState <> C_IFC.IN_COMBAT) or (GameVars.arenaPtr = nil) or
      CbtMap.wideLayout then Exit;
+  if GameVars.video.fine then begin
+    if MaxAvail < SizeOf(TMiniGrid) + 1024 then Exit;
+    GetMem(grid, SizeOf(TMiniGrid));
+    CbtMini.Build(grid^, current, cursorX, cursorY);
+    CbtMini.ShowFine(grid^);
+    FreeMem(grid, SizeOf(TMiniGrid));
+    Exit;
+  end;
   { the grid, and one 8 x 8 cell in the video mode's layout (64 bytes on VGA) with its header and mask }
   if MaxAvail < SizeOf(TMiniGrid) + LongInt(Blit.FrameBytes(8, 1)) + 1024 then Exit;
   GetMem(grid, SizeOf(TMiniGrid));

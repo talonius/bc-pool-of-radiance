@@ -8,7 +8,7 @@ program FixMain;
 uses {$IFDEF FPC}{$IFDEF UNIX}CThreads, {$ENDIF}SdlHost, SdlSound, {$ENDIF}Types,
   {$IFNDEF FPC}Overlay, {$ENDIF}Crt, Dos,
   GameDefs, GameVars,
-  SoundDrv, GameIo, DaxIo, TextRend, Blit, {$IFNDEF FPC}VidCga, VidEga, VidTdy, {$ENDIF}VidVga, GameBoot,
+  SoundDrv, GameIo, DaxIo, TextRend, Blit, {$IFNDEF FPC}VidCga, VidEga, VidTdy, VidVesa, {$ENDIF}VidVga, GameBoot,
   Sym8x8, Border, Debug, MapTiles, CbtMap, Pathing, View3D, Portrait, Wilds, MapView,
   MenuCore, CharHlp, CharDisp, FxEngine, ClassCal, Magic, Money, MoneyCal, RandItem, GameTime, ViewChar, Ending,
   VidOps, PicCga, PicEga, PicTdy, PicVga, UsualSpl, SaveLoad, CharGen, Camp,

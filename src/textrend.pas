@@ -8,6 +8,13 @@ interface
 
 uses Types;
 
+const
+  { the 640 x 400 screen's text grid (Fine): 80 columns of 8 x 8 cells, 50 rows }
+  FINE_LAST_COL = 79;
+  FINE_LAST_ROW = 49;
+  { the fine row the bottom-line menus are drawn on: the top of the 320 x 200 layout's row 24 }
+  FINE_BOTTOM_ROW = 48;
+
 var
   { DisplayMessageWindow's text that runs past its window's last row waits on the text delay (PauseOnly) before the rest
     is shown, not for a key: the full-width combat view's two message lines (CbtMap.SetLayout, #1211) }
@@ -86,6 +93,35 @@ procedure DelayOrKey(seconds: Word);
 procedure FlashBottomLine(color: Byte; msg: Types.TStr40);
 
 procedure ClearRect(ulCol, ulRow, lrCol, lrRow: ShortInt);
+
+{ True when the screen is 640 x 400 (GameVars.video.fine, #1231): the Fine routines draw on its 80 x 50 grid, while
+  everything else draws the 320 x 200 layout at 2 x 2. }
+function Fine: Boolean;
+
+{ Draws count copies of a character on the 80 x 50 grid, as RenderChar's with isAscii set; nothing off the grid, or when
+  the screen is not fine.
+  @param(col The first copy's column, 0 to FINE_LAST_COL.)
+  @param(row The row, 0 to FINE_LAST_ROW.)
+  @param(fg The ink color.)
+  @param(bg The paper color.)
+  @param(count The number of copies.)
+  @param(ch The character.) }
+procedure FineChar(col, row, fg, bg, count, ch: Byte);
+
+{ Writes s on the 80 x 50 grid from a cell, in ink on paper; characters past the last column are not drawn.
+  @param(col The first character's column.)
+  @param(row The row.)
+  @param(fg The ink color.)
+  @param(bg The paper color.)
+  @param(s The text.) }
+procedure FineString(col, row, fg, bg: Byte; s: string);
+
+{ Clears a rectangle of the 80 x 50 grid to black, cut to the grid; nothing when the screen is not fine.
+  @param(ulCol The left column.)
+  @param(ulRow The top row.)
+  @param(lrCol The right column.)
+  @param(lrRow The bottom row.) }
+procedure FineClear(ulCol, ulRow, lrCol, lrRow: Byte);
 
 implementation
 
@@ -443,6 +479,40 @@ begin
   { the rectangle must lie on the 40 x 25 screen, corners in order }
   if (ulCol < 0) or (ulRow < 0) or (ulCol > lrCol) or (ulRow > lrRow) or (lrCol > 39) or (lrRow > 24) then Exit;
   GameVars.video.ClearRect(ulCol, ulRow, lrCol, lrRow);
+end;
+
+function Fine: Boolean;
+begin
+  Fine := GameVars.video.fine;
+end;
+
+procedure FineChar(col, row, fg, bg, count, ch: Byte);
+var
+  i: Byte;
+  glyph: Byte;
+begin
+  if not GameVars.video.fine or (GameVars.gameFont = nil) then Exit;
+  glyph := Ord(UpCase(Chr(ch))) mod 64;
+  for i := 1 to count do
+    if (col + i - 1 <= FINE_LAST_COL) and (row <= FINE_LAST_ROW) then
+      GameVars.video.DrawFineGlyph(col + i - 1, row, fg, bg, glyph);
+end;
+
+procedure FineString(col, row, fg, bg: Byte; s: string);
+var
+  i: Byte;
+begin
+  for i := 1 to Length(s) do
+    TextRend.FineChar(col + i - 1, row, fg, bg, 1, Ord(s[i]));
+end;
+
+procedure FineClear(ulCol, ulRow, lrCol, lrRow: Byte);
+begin
+  if not GameVars.video.fine then Exit;
+  if lrCol > FINE_LAST_COL then lrCol := FINE_LAST_COL;
+  if lrRow > FINE_LAST_ROW then lrRow := FINE_LAST_ROW;
+  if (ulCol > lrCol) or (ulRow > lrRow) then Exit;
+  GameVars.video.ClearFineRect(ulCol, ulRow, lrCol, lrRow);
 end;
 
 begin

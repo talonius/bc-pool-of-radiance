@@ -179,6 +179,8 @@ begin
     PutPixelRow := PicCga.PutPixelRow;
     InitRowTables := PicCga.InitRowTables;
     SetPalette := VidCga.SetPalette;
+    { the 320 x 200 screen: no fine entries (VidVesa's) }
+    fine := False;
   end;
 end;
 
