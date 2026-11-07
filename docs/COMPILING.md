@@ -19,8 +19,8 @@ All commands in the native sections are run from the repository's top-level dire
 If you do not have the source yet, clone it and enter the checkout:
 
 ```sh
-git clone https://forgejo.brazencrows.com/talonius/pool-of-radiance.git
-cd pool-of-radiance
+git clone https://github.com/talonius/bc-pool-of-radiance.git
+cd bc-pool-of-radiance
 ```
 
 ## Native build: what the scripts do

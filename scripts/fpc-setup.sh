@@ -4,14 +4,15 @@
 #
 #   scripts/fpc-setup.sh            build the compiler for this host and the cross compilers build/toolchain lists
 #   scripts/fpc-setup.sh --print    print the folder the toolchain is (or would be) installed in, and stop
-#   scripts/fpc-setup.sh --pack DIR set up as usual, then pack the installation into DIR as goldbox-toolchain
-#                                   publishes it (scripts/toolchain-release.sh)
+#   scripts/fpc-setup.sh --pack DIR set up as usual, then pack the installation into DIR as the talonius/fpc fork's
+#                                   goldbox release publishes it (scripts/toolchain-release.sh)
 #
 # build/toolchain specifies the source branch and commit, plus the released compiler used to bootstrap it, and the
 # recipe (recipe=N), the revision of how this script builds them. The result is installed under
 # $FPC_PREFIX/<branch>-<short commit>, with ~/fpc as the default prefix. Re-running the script with the same pins
-# reuses the completed installation. With TOOLCHAIN_RELEASES set, a published build of these pins is downloaded
-# instead of compiled: release fpc-<branch>-<short commit>-r<recipe> (see scripts/toolchain-release.sh). TOOLCHAIN_FILE
+# reuses the completed installation. With FPC_RELEASES (or TOOLCHAIN_RELEASES) set, a published build of these pins
+# is downloaded instead of compiled: fpc-<branch>-<short commit>-r<recipe>-<host>.tar.zst, which the talonius/fpc
+# fork's goldbox release publishes (see scripts/toolchain-release.sh). TOOLCHAIN_FILE
 # names another pin file, for a repository that keeps it elsewhere.
 #
 # Downloads go to $FPC_PREFIX/cache, each into its own folder. Nothing outside FPC_PREFIX is changed. FPC_GIT_URL
@@ -117,13 +118,14 @@ fi
 
 # --- a published build --------------------------------------------------------------------------
 
-if release_fetch "$tag" "$file" "$prefix_root"; then
+base="$(release_base FPC_RELEASES "$tag")"
+if release_fetch "$base" "$file" "$prefix_root"; then
     configure > /dev/null
     touch "$stamp"
-    echo "fpc-setup.sh: Free Pascal $pin installed in $prefix from release $tag"
+    echo "fpc-setup.sh: Free Pascal $pin installed in $prefix from $base"
     finish
 fi
-release_missing "Free Pascal $pin" "$tag"
+release_missing "Free Pascal $pin" "$base" "$file"
 
 problems=()
 for tool in curl tar git make; do

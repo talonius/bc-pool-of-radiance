@@ -1,0 +1,302 @@
+# Build and test every push to main and every pull request; publish main as the rolling pre-release "latest" after
+# each push to it, and version tags as releases. Each run rebuilds the v1.1, v1.2 and v1.3 tags and compares them with
+# SSI's original executables. This is the GitHub port of .forgejo/workflows/build.yml.
+#
+# workflow_dispatch with a tag releases it, even one that predates this workflow: it uses that tag's src/ and build/
+# directories with the current scripts/ and release scripts. With the tag latest it publishes main as latest at once;
+# with the tag left empty it only builds and tests.
+#
+# Publishing waits for both the build and the historical reproduction jobs, so a toolchain change that alters SSI's
+# executables stops the release.
+#
+# Nothing is compiled but the game: .github/scripts/tools.sh downloads every toolchain from a goldbox release built by
+# that toolchain's own repository (talonius/fpc, talonius/SDL, talonius/dosbox-x, and the private
+# talonius/goldbox-re-tools for the proprietary DOS toolchains, read with the secret GOLDBOX_RE_TOOLS_TOKEN). A pin in
+# build/toolchain with no published build stops the job: move that fork's goldbox tag first.
+#
+# Pull requests from forks get no secrets, so their runs are skipped rather than failing for want of the DOS
+# toolchains.
+#
+# The native jobs (Linux and Windows ports) run when the repository variable NATIVE_CI is 'true', the macOS jobs when
+# MACOS_CI is. Signing and notarizing a macOS release needs MACOS_SIGNING 'true' and the secrets MACOS_SIGN_P12 (the
+# Developer ID .p12, base64), MACOS_SIGN_P12_PASSWORD, MACOS_NOTARY_KEY (the App Store Connect .p8), MACOS_NOTARY_KEY_ID
+# and MACOS_NOTARY_ISSUER.
+
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: A version tag to release (v1.1), latest to publish main now, or empty to build and test only
+        required: false
+        type: string
+
+concurrency:
+  group: build-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: write
+
+env:
+  FPC_PREFIX: /home/runner/toolchain
+
+jobs:
+  # What this run does: run (the build and test jobs), publish (the release jobs) and tag (what they release).
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.plan.outputs.run }}
+      publish: ${{ steps.plan.outputs.publish }}
+      tag: ${{ steps.plan.outputs.tag }}
+    steps:
+      - name: Plan
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          REPO: ${{ github.repository }}
+          PR_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          run=true publish=false tag=""
+          case "$EVENT" in
+              pull_request) [ "$PR_REPO" = "$REPO" ] || run=false ;;
+              push)
+                  case "$REF" in
+                      refs/tags/v*) publish=true tag="$REF_NAME" ;;
+                      refs/heads/main) publish=true tag=latest ;;
+                  esac ;;
+              workflow_dispatch) [ -z "$INPUT_TAG" ] || { publish=true tag="$INPUT_TAG"; } ;;
+          esac
+          printf 'run=%s\npublish=%s\ntag=%s\n' "$run" "$publish" "$tag" | tee -a "$GITHUB_OUTPUT"
+
+  build:
+    needs: [plan]
+    if: needs.plan.outputs.run == 'true'
+    runs-on: ubuntu-24.04
+    # build.sh gives DOSBox-X ten minutes; this catches hangs elsewhere in the job.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Toolchains (DOSBox-X, and the DOS toolchains as TOOLS)
+        env:
+          GOLDBOX_RE_TOOLS_TOKEN: ${{ secrets.GOLDBOX_RE_TOOLS_TOKEN }}
+        run: .github/scripts/tools.sh dos
+      - name: Build and run the unit tests
+        run: scripts/build.sh --test
+
+  reproduce:
+    needs: [plan]
+    if: needs.plan.outputs.run == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # Keep this list synchronized with .forgejo/ssi-releases.txt.
+        tag: [v1.1, v1.2, v1.3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Toolchains (DOSBox-X, and the DOS toolchains as TOOLS)
+        env:
+          GOLDBOX_RE_TOOLS_TOKEN: ${{ secrets.GOLDBOX_RE_TOOLS_TOKEN }}
+        run: .github/scripts/tools.sh dos
+      - name: Rebuild ${{ matrix.tag }} and compare with SSI's release
+        run: .forgejo/scripts/reproduce.sh "${{ matrix.tag }}"
+
+  release:
+    needs: [plan, build, reproduce]
+    if: needs.plan.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      TAG: ${{ needs.plan.outputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Toolchains (DOSBox-X, and the DOS toolchains as TOOLS)
+        env:
+          GOLDBOX_RE_TOOLS_TOKEN: ${{ secrets.GOLDBOX_RE_TOOLS_TOKEN }}
+        run: .github/scripts/tools.sh dos
+      - name: Use the dispatched tag's source
+        if: github.event_name == 'workflow_dispatch' && env.TAG != 'latest'
+        run: |
+          # Require an existing tag; otherwise a release could create that name at the current commit.
+          git rev-parse -q --verify "refs/tags/$TAG" > /dev/null || { echo "$TAG is not a tag." >&2; exit 1; }
+          # Replace both directories so files added after the tag, such as build/toolchain, cannot leak into the build.
+          rm -rf src build
+          git checkout "$TAG" -- src build
+          echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct "$TAG")" >> "$GITHUB_ENV"
+          echo "BUILD_REF=$TAG" >> "$GITHUB_ENV"
+      # The release jobs that follow check out this same commit, and release.sh finds the release by this tag. A push
+      # made with the job token starts no workflow.
+      - name: Point the latest tag at this commit
+        if: env.TAG == 'latest'
+        run: |
+          git push -q -f origin HEAD:refs/tags/latest
+          git tag -f latest HEAD
+      # Historical reproduction has already verified this source and these toolchains are deterministic.
+      - name: Build
+        run: scripts/build.sh
+      - name: Package
+        run: scripts/package.sh "$TAG"
+      - name: Release
+        run: .github/scripts/release.sh "$TAG"
+
+  native:
+    needs: [plan]
+    if: vars.NATIVE_CI == 'true' && needs.plan.outputs.run == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64-linux, i386-linux, x86_64-win64, i386-win32]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Toolchains (Free Pascal and SDL3)
+        run: .github/scripts/tools.sh native ${{ matrix.target }}
+      # Windows tests run under Wine.
+      - name: Run the ${{ matrix.target }} unit tests
+        run: scripts/build-native.sh --test ${{ matrix.target }}
+      - name: Build ${{ matrix.target }}
+        run: scripts/build-native.sh ${{ matrix.target }}
+
+  release-native:
+    needs: [plan, release, native]
+    if: vars.NATIVE_CI == 'true' && needs.plan.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-linux
+            archive: linux-x86_64.tar.gz
+          - target: i386-linux
+            archive: linux-i386.tar.gz
+          - target: x86_64-win64
+            archive: windows-x64.zip
+          - target: i386-win32
+            archive: windows-x86.zip
+    env:
+      TAG: ${{ needs.plan.outputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check out the release's commit
+        if: env.TAG == 'latest'
+        run: git checkout -q --detach "$(git ls-remote origin refs/tags/latest | cut -f1)"
+      - name: Use the dispatched tag's source
+        if: github.event_name == 'workflow_dispatch' && env.TAG != 'latest'
+        run: |
+          git rev-parse -q --verify "refs/tags/$TAG" > /dev/null || { echo "$TAG is not a tag." >&2; exit 1; }
+          rm -rf src build
+          git checkout "$TAG" -- src build
+          echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct "$TAG")" >> "$GITHUB_ENV"
+          echo "BUILD_REF=$TAG" >> "$GITHUB_ENV"
+      - name: Toolchains (Free Pascal and SDL3)
+        run: .github/scripts/tools.sh native ${{ matrix.target }}
+      - name: Build ${{ matrix.target }}
+        run: scripts/build-native.sh ${{ matrix.target }}
+      - name: Package
+        run: scripts/package-native.sh "$TAG" ${{ matrix.target }}
+      - name: Attach to the release
+        run: .github/scripts/release-asset.sh "$TAG" "dist/pool-of-radiance-$TAG-${{ matrix.archive }}"
+
+  macos:
+    needs: [plan]
+    if: vars.MACOS_CI == 'true' && needs.plan.outputs.run == 'true'
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      FPC_PREFIX: /Users/runner/toolchain
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Toolchains (Free Pascal and SDL3)
+        run: .github/scripts/tools.sh macos
+      - name: Run the native unit tests
+        run: scripts/build-native.sh --test macos
+      - name: Build the app
+        run: scripts/build-native.sh macos
+
+  release-macos:
+    needs: [plan, release, macos]
+    if: vars.MACOS_CI == 'true' && vars.MACOS_SIGNING == 'true' && needs.plan.outputs.publish == 'true'
+    runs-on: macos-15
+    timeout-minutes: 120
+    env:
+      FPC_PREFIX: /Users/runner/toolchain
+      TAG: ${{ needs.plan.outputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check out the release's commit
+        if: env.TAG == 'latest'
+        run: git checkout -q --detach "$(git ls-remote origin refs/tags/latest | cut -f1)"
+      - name: Use the dispatched tag's source
+        if: github.event_name == 'workflow_dispatch' && env.TAG != 'latest'
+        run: |
+          git rev-parse -q --verify "refs/tags/$TAG" > /dev/null || { echo "$TAG is not a tag." >&2; exit 1; }
+          rm -rf src build
+          git checkout "$TAG" -- src build
+          echo "BUILD_REF=$TAG" >> "$GITHUB_ENV"
+      - name: Toolchains (Free Pascal and SDL3)
+        run: .github/scripts/tools.sh macos
+      - name: Build the app
+        run: scripts/build-native.sh macos
+      - name: Sign, notarize and staple
+        env:
+          P12: ${{ secrets.MACOS_SIGN_P12 }}
+          P12_PASSWORD: ${{ secrets.MACOS_SIGN_P12_PASSWORD }}
+          NOTARY_P8: ${{ secrets.MACOS_NOTARY_KEY }}
+          NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          NOTARY_ISSUER: ${{ secrets.MACOS_NOTARY_ISSUER }}
+        run: |
+          keys="$RUNNER_TEMP/signing"
+          mkdir -p "$keys"
+          printf '%s' "$P12" | base64 --decode > "$keys/developer-id.p12"
+          printf '%s' "$P12_PASSWORD" > "$keys/developer-id.p12-password"
+          printf '%s\n' "$NOTARY_P8" > "$keys/notary-key.p8"
+          SIGN_P12="$keys/developer-id.p12" SIGN_P12_PASSWORD_FILE="$keys/developer-id.p12-password" \
+              NOTARY_KEY="$keys/notary-key.p8" scripts/macos-sign.sh
+          rm -rf "$keys"
+      # Put project data files beside the stapled app, where the game expects them. They remain outside the signed
+      # bundle. docs/dist-readmes/macos-readme.txt explains how the app finds retail data and its save directory (#1064).
+      - name: Package
+        run: |
+          stage="$(mktemp -d)"
+          ditto "obj/native/macos/Pool of Radiance.app" "$stage/Pool of Radiance.app"
+          [ ! -d src/binaries ] || find src/binaries -maxdepth 1 -type f -exec cp {} "$stage/" \;
+          cp docs/dist-readmes/macos-readme.txt "$stage/README.TXT"
+          mkdir -p dist
+          rm -f "dist/pool-of-radiance-$TAG-macos.zip"
+          (cd "$stage" && ditto -c -k --sequesterRsrc . "$OLDPWD/dist/pool-of-radiance-$TAG-macos.zip")
+          rm -rf "$stage"
+          unzip -l "dist/pool-of-radiance-$TAG-macos.zip" | tail -n 3
+      - name: Attach to the release
+        run: .github/scripts/release-asset.sh "$TAG" "dist/pool-of-radiance-$TAG-macos.zip"

@@ -22,11 +22,16 @@ current version of the repository.
   - `compiler` selects the Turbo Pascal directory under the DOS toolchains (`TOOLS`), such as `TP6-1991`. Versions
     without a `toolchain` file, including SSI's v1.1 and v1.2, use `TP50`.
   - `fpc`, `fpc_bootstrap`, and `sdl3` identify the Free Pascal source (branch and commit), the released compiler
-    used to bootstrap it, and the SDL3 release used by the native ports.
-  - `recipe` is the revision of how the setup scripts build them. It is part of the name of the prebuilt
-    toolchain releases in goldbox-toolchain, so a change to the build steps bumps it and gets fresh releases.
-    [`scripts/fpc-setup.sh`](../scripts/fpc-setup.sh) and [`scripts/sdl3-setup.sh`](../scripts/sdl3-setup.sh) read
-    these values.
+    used to bootstrap it, and the SDL3 release used by the native ports. `dosbox_x` is the DOSBox-X release CI runs
+    the DOS build with.
+  - `recipe` is the revision of how the setup scripts build them. It is part of the name of each prebuilt archive,
+    so a change to the build steps bumps it.
+    [`scripts/fpc-setup.sh`](../scripts/fpc-setup.sh), [`scripts/sdl3-setup.sh`](../scripts/sdl3-setup.sh) and
+    [`scripts/dosbox-x-setup.sh`](../scripts/dosbox-x-setup.sh) read these values.
+  - CI builds none of them. Each comes from the release `goldbox` of its fork (talonius/fpc, talonius/SDL,
+    talonius/dosbox-x), whose CI builds the pins in its own `goldbox/toolchain` when its tag `goldbox` is pushed.
+    Changing a pin here means changing it there and moving that tag; until then CI stops, saying which archive is
+    missing.
 - **`logs/`** contains output from the most recent build: DOSBox-X output; assembler, compiler, and packer logs
   (`TASM.OUT`, `TPC.OUT`, `PACK.OUT`, and `TPCCFG.OUT`); and unit-test compilation logs under `logs/tests/`. Git
   does not track this directory. [`scripts/build.sh`](../scripts/build.sh) reads the logs when reporting errors.
