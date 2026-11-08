@@ -2,4 +2,5 @@ compiler=TP6-1991
 fpc=fixes_3_2@c118291bbde00708229f10f653ca2f4a506292e0
 fpc_bootstrap=3.2.2
 sdl3=3.4.8
+dosbox_x=2026.10.01
 recipe=1

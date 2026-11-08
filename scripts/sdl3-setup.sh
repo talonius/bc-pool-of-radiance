@@ -4,8 +4,8 @@
 #
 #   scripts/sdl3-setup.sh            build SDL3 for this host and the cross targets fpc-setup.sh builds compilers for
 #   scripts/sdl3-setup.sh --print    print the folder SDL3 is (or would be) installed in, and stop
-#   scripts/sdl3-setup.sh --pack DIR set up as usual, then pack each target into DIR as goldbox-toolchain publishes it
-#                                    (scripts/toolchain-release.sh)
+#   scripts/sdl3-setup.sh --pack DIR set up as usual, then pack each target into DIR as the talonius/SDL fork's
+#                                    goldbox release publishes it (scripts/toolchain-release.sh)
 #
 # build/toolchain (or the file TOOLCHAIN_FILE names) selects the SDL version and the recipe (recipe=N), the revision
 # of how this script builds it. Each target installs below $FPC_PREFIX/sdl3-<version>/<target>, using ~/fpc as the
@@ -16,8 +16,9 @@
 #   i386-win32      bin/SDL3.dll, which the game loads and the package ships; lib/libSDL3.a (mingw) is unused
 #   x86_64-win64    bin/SDL3.dll, likewise
 #   aarch64-darwin  lib/libSDL3.a (on an Apple Silicon Mac; there is no Intel Mac target)
-# A target already built is skipped. With TOOLCHAIN_RELEASES set, a target not yet built is downloaded from release
-# sdl3-<version>-r<recipe> first (see scripts/toolchain-release.sh), and only the rest are compiled. SDL_GIT_URL
+# A target already built is skipped. With SDL3_RELEASES (or TOOLCHAIN_RELEASES) set, a target not yet built is
+# downloaded first, as sdl3-<version>-r<recipe>-<target>.tar.zst from the talonius/SDL fork's goldbox release (see
+# scripts/toolchain-release.sh), and only the rest are compiled. SDL_GIT_URL
 # builds from a mirror of SDL's repository, at tag release-<version>, instead of the release tarball from GitHub.
 #
 # The build requires CMake and Ninja. Linux uses the system packages. On macOS, missing tools are downloaded at the
@@ -73,12 +74,13 @@ finish() {
 
 # Download the targets not yet built that have a published build.
 missing=0
+base="$(release_base SDL3_RELEASES "$tag")"
 for t in "${targets[@]}"; do
     [ -f "$prefix/$t/lib/libSDL3.a" ] && continue
-    if release_fetch "$tag" "$tag-$t.tar.zst" "$prefix_root"; then
-        echo "sdl3-setup.sh: SDL3 $version for $t installed in $prefix/$t from release $tag"
+    if release_fetch "$base" "$tag-$t.tar.zst" "$prefix_root"; then
+        echo "sdl3-setup.sh: SDL3 $version for $t installed in $prefix/$t from $base"
     else
-        release_missing "SDL3 $version for $t" "$tag"
+        release_missing "SDL3 $version for $t" "$base" "$tag-$t.tar.zst"
         missing=1
     fi
 done

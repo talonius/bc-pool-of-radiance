@@ -20,7 +20,7 @@ If you do not have the source yet, clone it and enter the checkout:
 
 ```sh
 git clone https://github.com/talonius/bc-pool-of-radiance.git
-cd pool-of-radiance
+cd bc-pool-of-radiance
 ```
 
 ## Native build: what the scripts do
