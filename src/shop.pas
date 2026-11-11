@@ -16,55 +16,15 @@ procedure CounterMenu(atTemple: Boolean; command: Types.TMenuAction);
 
 procedure GiveItemCopyToCreature(item: Types.PItemRec; var failed: Boolean);
 
+{ The current character buys item, once it still wants it (WantsItem): paid for from its own coins when they cover the
+  price, otherwise from the pooled treasure money, and given a copy (GiveItemCopyToCreature); 'Not enough money.' when
+  neither covers it. The Buy screen (ShopBuy.BuyScreen) calls it. }
+procedure BuyItem(item: Types.PItemRec);
+
 implementation
 
-uses Crt, C_MSG, C_SPELL, GameDefs, GameVars, EclMenu, ViewChar, Money, C_KEYS, C_IFC, Border, CharHlp, MenuCore,
-  TextRend, CharDisp, MoneyCal, Party, Magic;
-
-{ Temporarily formats each item name as a 30-column menu row with a right-aligned
-  price, runs the Buy menu, then restores the normal labels. cursor and idx
-  preserve the selection between calls. }
-procedure ShopBuyItemSelection(var c: Char; var itemToBuy: Types.PItemRec; var cursor: Types.PItemRec;
-                               var idx: Integer);
-var
-  head: Types.PItemRec;
-  p: Types.PItemRec;
-  tmp: String[16];
-  s: String[30];
-  lenv: Byte;
-  i: Byte;
-  { Seeded True; MenuVertical draws the page and clears it. }
-  redraw: Boolean;
-begin
-  redraw := True;
-  p := GameVars.treasureItems;
-  while p <> nil do begin
-    { 30 blanks, the full width of s }
-    s := '                              ';
-    if p^.value = 0 then p^.value := 1;
-    Str(LongInt(p^.value), tmp);
-    lenv := Length(tmp);
-    for i := 1 to lenv do
-      s[SizeOf(s) - 1 - lenv + i] := tmp[i];
-    { the name is cut short of the price, with a blank between, so it neither runs past s nor over the price }
-    lenv := Length(p^.name);
-    if lenv > SizeOf(s) - 2 - Length(tmp) then
-      lenv := SizeOf(s) - 2 - Length(tmp);
-    for i := 1 to lenv do
-      s[i] := p^.name[i];
-    p^.name := s;
-    p^.name[0] := Chr(SizeOf(s) - 1);
-    p := p^.next;
-  end;
-  Border.DrawWindow(C_MSG.TEXT_LEFT, C_MSG.TEXT_TOP, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM, 0, White, 'Shop');
-  head := GameVars.treasureItems;
-  { Alt-n opens member n's items (ViewChar.AltItems), for ShopBuyMenu to run }
-  MenuCore.memberKeysToCaller := True;
-  c := MenuCore.MenuVertical('Items: ', 'Buy', LightMagenta, LightGreen, White, 1, 4, 38, 22, head,
-                             True, redraw, idx, cursor);
-  itemToBuy := cursor;
-  CharHlp.LabelItems(GameVars.treasureItems);
-end;
+uses Crt, C_MSG, C_SPELL, GameDefs, GameVars, EclMenu, ViewChar, Money, C_IFC, CharHlp, MenuCore, TextRend, CharDisp,
+  MoneyCal, Party, Magic, ShopBuy;
 
 { Give the current character a copy of item (CharHlp.AddToInventory, which joins it to a stack it matches while Auto
   Join is on) and recalculate its stats. When the character cannot carry it, print that it is overloaded and set
@@ -140,46 +100,30 @@ begin
   end;
 end;
 
-{ Buy loop: each chosen item, once the player still wants it (WantsItem), is paid for from the current character's
-  coins when they cover the price, otherwise from the pooled treasure money. Alt-n opens member n's items, who then
-  buys (ViewChar.AltItems, #1195), and the list comes back. Runs until the menu is left with a key other than Buy or
-  Enter. }
-procedure ShopBuyMenu;
+procedure BuyItem(item: Types.PItemRec);
 var
-  itemToBuy: Types.PItemRec;
-  c: Char;
-  done: Boolean;
   price: Word;
   payer: Byte;
   failed: Boolean;
-  cursor: Types.PItemRec;
-  idx: Integer;
-  { AltItems's result: the list is drawn again either way }
-  opened: Boolean;
 begin
-  itemToBuy := nil;
-  cursor := GameVars.treasureItems;
-  { MenuVertical counts idx from 0: open on the first item, as the loot Take menu does }
-  idx := 0;
-  repeat
-    Shop.ShopBuyItemSelection(c, itemToBuy, cursor, idx);
-    done := False;
-    if Party.AltMember(c) > 0 then
-      opened := ViewChar.AltItems(c)
-    else if (c <> 'B') and (c <> C_KEYS.ENTER) then
-      done := True
-    else if Shop.WantsItem(itemToBuy) then begin
-      price := itemToBuy^.value;
-      payer := MoneyCal.WhoPays(GameVars.curChar, price);
-      if payer = MoneyCal.PAY_NOBODY then
-        CharDisp.PrintBottomLine('Not enough money.')
-      else begin
-        Shop.GiveItemCopyToCreature(itemToBuy, failed);
-        if not failed then
-          Money.PayBy(GameVars.curChar, payer, price);
-      end;
+  if Shop.WantsItem(item) then begin
+    price := item^.value;
+    payer := MoneyCal.WhoPays(GameVars.curChar, price);
+    if payer = MoneyCal.PAY_NOBODY then
+      CharDisp.PrintBottomLine('Not enough money.')
+    else begin
+      Shop.GiveItemCopyToCreature(item, failed);
+      if not failed then
+        Money.PayBy(GameVars.curChar, payer, price);
     end;
-  until done;
+  end;
+end;
+
+{ Buy: the Buy screen (mocks/new-shop.txt, ShopBuy.BuyScreen), which lists the stock under tabs, scrolls it a line at a
+  time and shows what the highlighted item would do for the buyer; Alt-n makes member n the buyer there. }
+procedure ShopBuyMenu;
+begin
+  ShopBuy.BuyScreen;
 end;
 
 { The counter menu: Buy or Heal (command), View, Take, Pool, Share, Appraise and Exit, with Take and Share offered only

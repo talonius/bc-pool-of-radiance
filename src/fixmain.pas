@@ -13,9 +13,9 @@ uses {$IFDEF FPC}{$IFDEF UNIX}CThreads, {$ENDIF}SdlHost, SdlSound, {$ENDIF}Types
   MenuCore, CharHlp, CharDisp, FxEngine, ClassCal, Magic, Money, MoneyCal, RandItem, GameTime, ViewChar, Ending,
   VidOps, PicCga, PicEga, PicTdy, PicVga, UsualSpl, SaveLoad, CharGen, Camp,
   Journal1, Journal2, Journal3, Journal4, JrnlList, JrnlQst, JrnlView, Options, CbtLog, LogWrap, LogView,
-  Explore, CbtActs, EffHndlr, GameInit, CombatSt, CombatAi, Combat, EclVars, EclMenu, Shop, PostCbt, TownCore, Temple,
-  EclVm, BldShow, DataPat, DataBld, Intro, HeapErr, SaveMenu, AreaName, Vault, VaultMnu, EclTrace, KeyHelp, Advisory,
-  Demo, CbtMini, WideView;
+  Explore, CbtActs, EffHndlr, GameInit, CombatSt, CombatAi, Combat, EclVars, EclMenu, Shop, ShopBuy, PostCbt, TownCore,
+  Temple, EclVm, BldShow, DataPat, DataBld, Intro, HeapErr, SaveMenu, AreaName, Vault, VaultMnu, EclTrace, KeyHelp,
+  Advisory, Demo, CbtMini, WideView;
 
 {$O Demo}
 {$O WideView}
@@ -37,6 +37,7 @@ uses {$IFDEF FPC}{$IFDEF UNIX}CThreads, {$ENDIF}SdlHost, SdlSound, {$ENDIF}Types
 {$O TownCore}
 {$O PostCbt}
 {$O Shop}
+{$O ShopBuy}
 {$O EclVars}
 {$O EclMenu}
 {$O Combat}
