@@ -1,0 +1,69 @@
++======================================+
+| ALL MELEE RANGED ARMOR AMMO MISC     |
++======================================+
+| 250000 FINE ELVEN COMPOSITE BOW      |
+|     75 LONG BOW                    - |
+|     35 SHORT BOW                   * |
+|                                    * |
+|                                    * |
+|                                    * |
+|                                    * |
+|                                    * |
+|                                    * |
+|                                    - |
+|                                    - |
+|                                    - |
+|                                      |
++======================================+
+| CHAR: 2,014 GP    POOL: 15,102 GP    |
+| 1: BRIANNA    CURRENT AC 3 DMG 1D8+1 |
+|                   NEW AC 3 DMG 1D6   |
+| PLATE ARMOR                   SHIELD |
+| FINE ELVEN COMPOSITE BOW             |
+| 25 ARROWS +1                         |
++======================================+
+SHOP: SHOW ALL BUY EXIT
+
+SHOW ALL toggles between SHOW ALL and SHOW USABLE.
+ALT-1, ALT-2, ALT-... selects the appropriate PC.
+Gear is in same colors as the View Char screen.
+
++ SHIELD is only shown if they have a shield equipped.
++ SHIELD would show the shield statistics / item.
+
+As each item is moved over the NEW values would update.
+If the item isn't usable by the current PC, the new values 
+would become dashes ("--")
+CHAR: and POOL: would be in WHITE.
+2,014 GP / 15,102 GP (character and party gold) would be in YELLOW.
+
+L would be the command key for ALL.
+M would be the command key for MELEE
+R would be the command key for RANGED
+A would be the command key for ARMOR
+O would be the command key for AMMO
+I would be the command key for MISC
+S would be the toggle key for SHOW ALL/SHOW USABLE.
+E would be the command key for EXIT.
+B would be the command key for BUY. ENTER also purchases current item.
+
+The current selected tab would be all white.
+The remaining options would be shown in yellow, except for their command keys,
+which would get the normal treatment.
+
+If the list is empty due to the filters, show "** NO ITEMS **"
+When a character changes, change the filters appropriately. If the
+item that was selected prior to the filter change is available in the
+newly displayed list, place the selection on it. Otherwise, reset the
+the list to the top of the displayed items.
+
+Scrolling (agreed after the mock):
+The list scrolls a line at a time: UP/DOWN past the top or bottom row
+move the list one line, and stop at the ends of the list. PAGE UP and
+PAGE DOWN still move a page. There is no NEXT or PREV.
+The scroll bar in column 37 is shown only when the list is longer than
+the 13 rows. The thumb ("*", WHITE) is sized to the share of the list
+shown, at least one row, and follows the top of the visible window; the
+track ("-") is DARK GRAY.
+Ammunition: on a bow with matching arrows readied, NEW DMG is the bow's
+damage with the arrows; with none readied it is the bow's own damage.

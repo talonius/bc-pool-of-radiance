@@ -56,6 +56,13 @@ var
     its box, the bottom line offers Next and Prev on every page, and the box's last row is kept for '(more)' (DrawMore)
     while a page has lines below it. The call clears it. }
   fullPaging: Boolean;
+  { Set just before a MenuVertical call for a list that scrolls a line at a time, as the shop's Buy screen does
+    (mocks/new-shop.txt): Up and Down past the first or last row of the box move the list a line instead of wrapping
+    within the page, and stop at the ends of the list; the bottom line offers no Next or Prev (Page Up and Page Down
+    still turn a page). The box's last column is kept for a scroll bar (DrawScrollBar) while the list is longer than
+    the box, with a blank column before it, and a page left short by a shorter list is brought up to fill the box. The
+    call clears it. }
+  lineScroll: Boolean;
   { Called on every pass of MenuHorizontal's key wait while set; combat sets it to animate the spell-aim preview. }
   idleHook: Types.TIdleProc;
   { Set just before a MenuHorizontal call that is to give up waiting: after menuTimeout hundredths of a second with no
@@ -80,6 +87,16 @@ function PageRows(list: Types.PItemRec; ulRow, lrRow: ShortInt; paged: Boolean):
 { Draw '(more)' in white, centred between columns leftCol and rightCol on row: a list that goes on past what is shown. }
 procedure DrawMore(leftCol, rightCol, row: Byte);
 
+{ Where a scroll bar's thumb goes for a list of count lines in a box of rows lines whose first line shown is top
+  (zero-based): first, the thumb's first row from 0, and size, its length in rows. The thumb's share of the bar is the
+  share of the list shown, at least a row, and it runs from the bar's top, at the list's start, to its bottom, at the
+  list's end. A list that fits the box fills the bar. }
+procedure ScrollThumb(count, rows, top: Integer; var first, size: Integer);
+
+{ Draw a scroll bar for ScrollThumb's thumb in column col, from row topRow down rows rows: the thumb '*' in white, the
+  rest of the bar '-' in dark gray (mocks/new-shop.txt). }
+procedure DrawScrollBar(col, topRow: Byte; count, rows, top: Integer);
+
 { Bottom-line menu: query in qCol, then menu with its digits and capital letters (the hotkeys) in hlCol, the current
   option (GameVars.horizChoice, reset to 1 when out of range) in inverse video (black on hlCol, #1160) and the rest in
   mCol. ',' and '.' move the current option, and so do the Left and Right arrows unless arrowsToCaller is set. A
@@ -103,7 +120,8 @@ function MenuHorizontal(query, menu: Types.TStr40; qCol, mCol, hlCol: Byte; rein
   list that fits on one page is drawn and #0 returned with sel=nil at once. With movesToCaller set, a key that moves the
   highlight returns too. A key in extraKeys returns as any other menu key does, on every key the list waits for; so do
   Alt-1 to Alt-8 under memberKeysToCaller, as their scan codes. Under fullPaging a list longer than the box offers
-  Next and Prev on every page and marks a page with more below it. }
+  Next and Prev on every page and marks a page with more below it. Under lineScroll the list scrolls a line at a time
+  past the box's edges, stopping at its ends, with a scroll bar in the box's last column and no Next or Prev. }
 function MenuVertical(query, menu: Types.TStr40; qCol, mCol, hlCol: Byte; ulCol, ulRow, lrCol, lrRow: ShortInt;
                       list: Types.PItemRec; addExit: Boolean; var redraw: Boolean; var idx: Integer;
                       var sel: Types.PItemRec): Char;
@@ -184,6 +202,42 @@ end;
 procedure DrawMore(leftCol, rightCol, row: Byte);
 begin
   TextRend.DisplayCentered(leftCol, rightCol, row, White, '(more)');
+end;
+
+procedure ScrollThumb(count, rows, top: Integer; var first, size: Integer);
+begin
+  if (rows < 1) or (count <= rows) then begin
+    first := 0;
+    size := rows;
+  end else begin
+    size := Integer(LongInt(rows) * rows div count);
+    if size < 1 then
+      size := 1;
+    if top < 0 then
+      top := 0;
+    if top > count - rows then
+      top := count - rows;
+    { rounded to the nearest row, but at the top only at the list's start and at the bottom only at its end }
+    first := Integer((LongInt(top) * (rows - size) + (count - rows) div 2) div (count - rows));
+    if (first = 0) and (top > 0) and (rows - size > 1) then
+      first := 1;
+    if (first = rows - size) and (top < count - rows) and (first > 1) then
+      Dec(first);
+  end;
+end;
+
+procedure DrawScrollBar(col, topRow: Byte; count, rows, top: Integer);
+var
+  first: Integer;
+  size: Integer;
+  r: Integer;
+begin
+  MenuCore.ScrollThumb(count, rows, top, first, size);
+  for r := 0 to rows - 1 do
+    if (r >= first) and (r < first + size) then
+      TextRend.DisplayString(col, topRow + r, White, '*')
+    else
+      TextRend.DisplayString(col, topRow + r, DarkGray, '-');
 end;
 
 { Highlight the menu's choice characters and select an item by keypress. With takeOption, Enter returns the current
@@ -466,6 +520,8 @@ var
   keep: string[16];
   { fullPaging with the list longer than the box: Next and Prev on every page, and '(more)' on the box's last row }
   paged: Boolean;
+  { lineScroll, taken at entry }
+  scrolls: Boolean;
 
   { Clear the box and draw the list from member top, labels in qCol and entries in mCol, each padded to the box width,
     and, when paged, '(more)' on the box's last row while lines follow the page. }
@@ -489,6 +545,8 @@ var
     end;
     if paged and (top + rows < count) then
       MenuCore.DrawMore(ulCol, lrCol, lrRow);
+    if scrolls and (count > rows) then
+      MenuCore.DrawScrollBar(lrCol, ulRow, count, rows, top);
   end;
 
   { Position of the first non-blank character of s (the last position when s is all blanks). }
@@ -593,9 +651,39 @@ var
     DrawPage(GameVars.verticalMenuTop);
   end;
 
+  { lineScroll's MoveLine: move the cursor to the next entry that is no label, down or up, staying put when there is
+    none before the list's end; a cursor off the page brings the page to it, a line at a time, and redraws it. }
+  procedure ScrollLine(down: Boolean);
+  var
+    k: Integer;
+  begin
+    k := idx;
+    repeat
+      if down then
+        Inc(k)
+      else
+        Dec(k);
+    until (k < 0) or (k > count - 1) or (MenuCore.FindListMember(k, list)^.inUse = 0);
+    if (k >= 0) and (k <= count - 1) then
+      idx := k;
+    if idx > count - 1 then
+      idx := count - 1;
+    if idx < GameVars.verticalMenuTop then begin
+      GameVars.verticalMenuTop := idx;
+      DrawPage(GameVars.verticalMenuTop);
+    end else if idx > GameVars.verticalMenuTop + rows - 1 then begin
+      GameVars.verticalMenuTop := idx - rows + 1;
+      DrawPage(GameVars.verticalMenuTop);
+    end;
+  end;
+
   { Move the cursor one line, wrapping within the visible page and clamped to the list, then skip label rows. }
   procedure MoveLine(down: Boolean);
   begin
+    if scrolls then begin
+      ScrollLine(down);
+      Exit;
+    end;
     if down then begin
       Inc(idx);
       if GameVars.verticalMenuTop + rows - 1 < idx then
@@ -622,6 +710,8 @@ begin
   moved := False;
   paged := fullPaging;
   fullPaging := False;
+  scrolls := lineScroll;
+  lineScroll := False;
   if list = nil then begin
     listOnly := False;
     idx := 0;
@@ -629,7 +719,11 @@ begin
     MenuVertical := C_KEYS.NONE;
   end else begin
     GameVars.horizChoice := 1;
-    width := lrCol - ulCol + 1;
+    if scrolls then
+      { a blank column, then the scroll bar's }
+      width := lrCol - ulCol - 1
+    else
+      width := lrCol - ulCol + 1;
     count := MenuCore.ListCount(list);
     rows := MenuCore.PageRows(list, ulRow, lrRow, paged);
     paged := paged and (rows < lrRow - ulRow + 1);
@@ -654,6 +748,13 @@ begin
       GameVars.verticalMenuTop := idx - rows + 1;
       redraw := True;
     end;
+    { a scrolling list fills the box: a page left short by a shorter list comes up }
+    if scrolls and (GameVars.verticalMenuTop > 0) and (GameVars.verticalMenuTop > count - rows) then begin
+      GameVars.verticalMenuTop := count - rows;
+      if GameVars.verticalMenuTop < 0 then
+        GameVars.verticalMenuTop := 0;
+      redraw := True;
+    end;
     Inc(idx);
     MoveLine(False);
     if redraw then
@@ -673,11 +774,13 @@ begin
       hasNext := False;
       hasPrev := False;
       if paged or (count - rows > GameVars.verticalMenuTop) then begin
-        hMenu := hMenu + ' Next';
+        if not scrolls then
+          hMenu := hMenu + ' Next';
         hasNext := True;
       end;
       if paged or (GameVars.verticalMenuTop > headerCnt) then begin
-        hMenu := hMenu + ' Prev';
+        if not scrolls then
+          hMenu := hMenu + ' Prev';
         hasPrev := True;
       end;
       if addExit then
@@ -708,8 +811,8 @@ begin
         end else
         case ch of
           { as for Page Up and Page Down, only when the bottom line offers Prev or Next }
-          'P': if hasPrev then MovePage(False);
-          'N': if hasNext then MovePage(True);
+          'P': if hasPrev and not scrolls then MovePage(False);
+          'N': if hasNext and not scrolls then MovePage(True);
           C_KEYS.ESCAPE, 'E', C_KEYS.NONE:
             begin
               sel := nil;
@@ -803,6 +906,7 @@ begin
   movesToCaller := False;
   moved := False;
   fullPaging := False;
+  lineScroll := False;
   extraKeys := '';
   unmarked := [];
   quickKeysToCaller := False;

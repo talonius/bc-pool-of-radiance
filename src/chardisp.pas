@@ -26,6 +26,10 @@ procedure PrintHitPoints(creature: Types.PCharRecord; col, row: Byte; hotPink: B
 
 procedure DisplayCreatureName(creature: Types.PCharRecord; col, row: Byte; possessive: Boolean);
 
+{ The colour of the creature's name: light red (out of action, enabled = 0), yellow (hostile), light magenta (ready to
+  train) or light cyan (friendly). }
+function NameColor(creature: Types.PCharRecord): Byte;
+
 { Add the creature's name to the combat log's message (#841) in the colour DisplayCreatureName gives it, on a line of
   its own as the combat window shows it. }
 procedure LogCreatureName(creature: Types.PCharRecord);
