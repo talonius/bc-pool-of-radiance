@@ -616,9 +616,9 @@ begin
     end;
     ShopBuy.DrawPanel(creature, sel);
     if usableOnly then
-      menu := 'Show usable'
+      menu := 'Showing usable'
     else
-      menu := 'Show all';
+      menu := 'Showing all';
     MenuCore.extraKeys := tabKeys;
     MenuCore.memberKeysToCaller := True;
     if shown.count = 0 then begin

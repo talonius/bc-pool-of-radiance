@@ -16,6 +16,10 @@ procedure DrawWindow(ulCol, ulRow, lrCol, lrRow: ShortInt; corner, color: Byte; 
 { Put the corner symbol (corner, as DrawBorder's) at (col, row) of the 40x25 grid. }
 procedure PutCorner(col, row: ShortInt; corner: Byte);
 
+{ Forget the corner at the map window's lower-right corner: the whole screen was cleared (TextRend.ClearScreen), so a
+  later edge across that cell must not put one back. }
+procedure ForgetJoin;
+
 implementation
 
 uses TextRend, Sym8x8;
@@ -36,6 +40,11 @@ const
 procedure PutCorner(col, row: ShortInt; corner: Byte);
 begin
   Sym8x8.Put8x8Sym(col, row, corner * 3 + BORDER_SYM_BASE, False, False);
+end;
+
+procedure ForgetJoin;
+begin
+  joinCorner := False;
 end;
 
 { Draw a border one cell outside the requested text rectangle. Expand the coordinates to the border ring, then draw

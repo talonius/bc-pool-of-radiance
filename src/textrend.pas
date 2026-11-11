@@ -89,7 +89,7 @@ procedure ClearRect(ulCol, ulRow, lrCol, lrRow: ShortInt);
 
 implementation
 
-uses GameVars, DaxIo, Crt, Dos, GameIo, C_KEYS, C_MSG{$IFDEF FPC}, Host{$ENDIF};
+uses GameVars, DaxIo, Crt, Dos, GameIo, C_KEYS, C_MSG, Border{$IFDEF FPC}, Host{$ENDIF};
 
 {$IFDEF FPC}
 { the native build's count of the same ticks }
@@ -378,6 +378,8 @@ end;
 procedure ClearScreen;
 begin
   GameVars.video.ClearScreen;
+  { a corner Border kept at the map window's lower-right is gone with the rest (the shop's Buy screen drew one there) }
+  Border.ForgetJoin;
 end;
 
 { Clear the bottom row, print msg in color, pause on the text delay (not a keywait), clear again. The parameters are
