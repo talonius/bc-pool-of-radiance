@@ -22,9 +22,9 @@
 | FINE ELVEN COMPOSITE BOW             |
 | 25 ARROWS +1                         |
 +======================================+
-SHOP: SHOW ALL BUY EXIT
+SHOP: SHOWING ALL BUY EXIT
 
-SHOW ALL toggles between SHOW ALL and SHOW USABLE.
+SHOWING ALL toggles between SHOWING ALL and SHOWING USABLE.
 ALT-1, ALT-2, ALT-... selects the appropriate PC.
 Gear is in same colors as the View Char screen.
 
@@ -43,7 +43,7 @@ R would be the command key for RANGED
 A would be the command key for ARMOR
 O would be the command key for AMMO
 I would be the command key for MISC
-S would be the toggle key for SHOW ALL/SHOW USABLE.
+S would be the toggle key for SHOWING ALL/SHOWING USABLE.
 E would be the command key for EXIT.
 B would be the command key for BUY. ENTER also purchases current item.
 
