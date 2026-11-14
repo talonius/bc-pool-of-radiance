@@ -20,9 +20,13 @@ procedure PutCorner(col, row: ShortInt; corner: Byte);
   later edge across that cell must not put one back. }
 procedure ForgetJoin;
 
+{ Clear the whole screen (TextRend.ClearScreen) and draw the frame round the full text window (C_MSG.TEXT_LEFT to
+  TEXT_BOTTOM): a full-screen page's start, with no corner left on the frame from the windows drawn before it. }
+procedure ClearToFrame;
+
 implementation
 
-uses TextRend, Sym8x8;
+uses TextRend, Sym8x8, C_MSG;
 const
   BORDER_SYM_BASE = 276;
   { the 40x25 text grid }
@@ -45,6 +49,12 @@ end;
 procedure ForgetJoin;
 begin
   joinCorner := False;
+end;
+
+procedure ClearToFrame;
+begin
+  TextRend.ClearScreen;
+  Border.DrawBorder(C_MSG.TEXT_LEFT, C_MSG.TEXT_TOP, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM, 0);
 end;
 
 { Draw a border one cell outside the requested text rectangle. Expand the coordinates to the border ring, then draw

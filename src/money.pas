@@ -540,7 +540,8 @@ begin
           1: jwlStr := jwlStr + ' piece of Jewelry';
           else jwlStr := jwlStr + ' pieces of Jewelry';
         end;
-        TextRend.ClearRect(C_MSG.TEXT_LEFT, C_MSG.TEXT_TOP, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM);
+        { the whole screen, so that no corner of the shop's windows stays on the frame }
+        Border.ClearToFrame;
         CharDisp.DisplayCreatureName(GameVars.curChar, 1, 1, False);
         TextRend.DisplayString(1, 7, White, 'You have a fine collection of:');
         TextRend.DisplayString(1, 9, White, gemStr);

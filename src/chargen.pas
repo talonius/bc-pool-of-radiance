@@ -1444,8 +1444,7 @@ begin
       portraitHead := 1;
     if (portraitBody = 0) or (portraitBody > nBodies) then
       portraitBody := 1;
-    TextRend.ClearScreen;
-    Border.DrawBorder(C_MSG.TEXT_LEFT, C_MSG.TEXT_TOP, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM, 0);
+    Border.ClearToFrame;
     Centered(2, White, name);
     Border.DrawBorder(PIC_COL[1], PIC_ROW, PIC_COL[1] + 10, PIC_ROW + 10, 0);
     Centered(HINT_ROW, LightGreen, 'Arrow keys for selection');

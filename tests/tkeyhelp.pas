@@ -15,6 +15,35 @@ begin
       LineOf := n;
 end;
 
+{ The line of table t (count lines) whose key starts with k, or 0 for none. }
+function PageLineOf(t: KeyHelp.PKeyLines; count: Byte; k: string): Byte;
+var
+  n: Byte;
+begin
+  PageLineOf := 0;
+  for n := 1 to count do
+    if (k <> '') and (Copy(t^[n].key, 1, Length(k)) = k) then
+      PageLineOf := n;
+end;
+
+{ Whether every line of table t (count lines) fits ShowPage's box, 20 rows of 36 columns, its keys all 9 columns wide
+  and a continued line's text under the text above it. }
+function PageFits(t: KeyHelp.PKeyLines; count: Byte): Boolean;
+var
+  n: Byte;
+  w: Byte;
+  fits: Boolean;
+begin
+  fits := count <= 20;
+  w := 9;
+  for n := 1 to count do
+    if t^[n].key = '' then
+      fits := fits and (w + Length(t^[n].what) <= 36)
+    else
+      fits := fits and (Length(t^[n].key) = w) and (w + Length(t^[n].what) <= 36);
+  PageFits := fits;
+end;
+
 { Whether the line for key k shows, on a menu that takes F5 and F8 when quickKeys is set. }
 function Shows(k: string; quickKeys: Boolean): Boolean;
 begin
@@ -47,10 +76,10 @@ begin
   TestKit.Check(not Shows('F7 ', True), 'F7 not with the Combat Log off');
   GameVars.combatLogOn := 1;
   TestKit.Check(Shows('F7 ', True) and Shows('F7 ', False), 'and with it on, on either menu (#903)');
-  TestKit.Check((LineOf('ALT-1 ') <> 0) and (LineOf('ALT-8 ') <> 0), 'Alt-1 to Alt-8 are listed (#1175)');
-  TestKit.Check(KeyHelp.KEYS[LineOf('ALT-1 ')].what = 'View PC 1''s inventory', 'as the member''s inventory');
-  TestKit.Check(Shows('ALT-8 ', True) and Shows('ALT-8 ', False), 'on either menu');
-  TestKit.Check(LineOf('ALT-1 ') = LineOf('1, 2') + 1, 'after the function keys and 1, 2');
+  TestKit.Check(LineOf('ALT-n ') <> 0, 'Alt-1 to Alt-8 are listed, as one line (#1175)');
+  TestKit.Check(KeyHelp.KEYS[LineOf('ALT-n ')].what = 'View PC n''s items (1 to 8)', 'as the member''s items');
+  TestKit.Check(Shows('ALT-n ', True) and Shows('ALT-n ', False), 'on either menu');
+  TestKit.Check(LineOf('ALT-n ') = LineOf('1, 2') + 1, 'after the function keys and 1, 2');
   TestKit.Check(LineOf('1, 2') = LineOf('F8 ') + 1, '1, 2, the weapon sets, after F8 (#1209)');
   TestKit.Check(Shows('1, 2', True) and Shows('1, 2', False), 'on either menu, as the combat menu may not show them');
   TestKit.Check(KeyHelp.KeyGroup(LineOf('1, 2')) = KeyHelp.KeyGroup(LineOf('F8 ')), 'in the function keys'' group');
@@ -61,14 +90,24 @@ begin
   GameVars.trainAnywhereOn := 1;
   TestKit.Check(Shows('F4 ', True) and Shows('F4 ', False), 'and with it on, on either menu (#1212)');
   TestKit.Check(LineOf('F4 ') = LineOf('F3 ') + 1, 'after F3');
-  TestKit.Check(not KeyHelp.GroupGaps(True), 'with every line shown the groups lose their blank rows, to fit');
+  TestKit.Check(KeyHelp.GroupGaps(True), 'with every line shown the groups keep their blank rows');
   shown := 0;
   for i := 1 to KeyHelp.KEY_LINES do
     if KeyHelp.LineShown(i, True) then
       Inc(shown);
-  TestKit.CheckEqualsL(19, shown, 'every line shown, F4''s among them: the window''s 19 rows exactly (#1212)');
+  TestKit.CheckEqualsL(12, shown, 'every line shown, F4''s among them (#1212)');
   GameVars.stingArg := False;
   GameVars.companionOn := 0;
-  TestKit.Check(KeyHelp.GroupGaps(True) and KeyHelp.GroupGaps(False), 'with fewer they keep them');
+  TestKit.Check(KeyHelp.GroupGaps(True) and KeyHelp.GroupGaps(False), 'and with fewer');
+  { the help pages of the shop's Buy screen and the Items screen }
+  TestKit.Check(PageFits(@KeyHelp.SHOP_KEYS, KeyHelp.SHOP_LINES), 'Shop Keys fits the window');
+  TestKit.Check(PageFits(@KeyHelp.ITEM_KEYS, KeyHelp.ITEM_LINES), 'Item Keys fits the window');
+  TestKit.Check(PageLineOf(@KeyHelp.SHOP_KEYS, KeyHelp.SHOP_LINES, 'ALT-n') <> 0, 'Shop Keys lists Alt-n');
+  TestKit.Check(PageLineOf(@KeyHelp.ITEM_KEYS, KeyHelp.ITEM_LINES, 'ALT-n') <> 0, 'Item Keys lists Alt-n');
+  TestKit.Check(PageLineOf(@KeyHelp.ITEM_KEYS, KeyHelp.ITEM_LINES, '1, 2') <> 0, 'Item Keys lists the weapon sets');
+  TestKit.Check(PageLineOf(@KeyHelp.SHOP_KEYS, KeyHelp.SHOP_LINES, 'S ') <> 0, 'Shop Keys lists the filter');
+  for i := 1 to 6 do
+    TestKit.Check(PageLineOf(@KeyHelp.SHOP_KEYS, KeyHelp.SHOP_LINES, Copy('LMRAOI', i, 1) + ' ') <> 0,
+                  'Shop Keys lists tab key ' + Copy('LMRAOI', i, 1));
   TestKit.Done;
 end.

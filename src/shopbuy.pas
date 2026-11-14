@@ -2,7 +2,8 @@
   (All, Melee, Ranged, Armor, Ammo and Misc), all of it or only what the current character can use, a price and a name
   to a line, scrolling a line at a time with a scroll bar (MenuCore.lineScroll). Under the list are the character's and
   the pool's gold, then the character's armor class and damage now and with the highlighted item readied (TryOn), over
-  the armor, shield, weapon and ammunition it has readied. Alt-1 to Alt-8 make another member the buyer. Overlaid. }
+  the armor, shield, weapon and ammunition it has readied. Alt-1 to Alt-8 make another member the buyer; F1 lists the
+  keys (KeyHelp.SHOP_KEYS). Overlaid. }
 {$O+,F+}
 {$I COMPILER.INC}
 unit ShopBuy;
@@ -123,7 +124,8 @@ procedure BuyScreen;
 
 implementation
 
-uses Crt, C_EQUIP, C_KEYS, GameVars, Border, CharDisp, CharHlp, MenuCore, MoneyCal, Party, Shop, StrUtil, TextRend;
+uses Crt, C_EQUIP, C_KEYS, GameVars, Border, CharDisp, CharHlp, KeyHelp, MenuCore, MoneyCal, Party, Shop, StrUtil,
+  TextRend;
 
 const
   { the screen (mocks/new-shop.txt): the tabs' row and their columns, the list box, the panel's rows and its right
@@ -138,14 +140,18 @@ const
   LIST_RIGHT = 37;
   LIST_BOTTOM = 15;
   GOLD_ROW = 17;
-  BUYER_ROW = 18;
+  CURR_ROW = 18;
   NEW_ROW = 19;
   ARMOR_ROW = 20;
   WEAPON_ROW = 21;
   AMMO_ROW = 22;
   PANEL_LEFT = 2;
   PANEL_RIGHT = 37;
-  POOL_COL = 20;
+  { the gold line: 'Gold' at GOLD_COL, the character's gold ending at CHAR_GOLD_END and the pool's at PANEL_RIGHT }
+  GOLD_COL = 18;
+  CHAR_GOLD_END = 29;
+  { where the Curr and New lines start }
+  FIGURES_COL = 5;
   { the most items TryOn puts away: what holds the slot, a ring, and what holds the hands }
   OFF_MAX = 8;
 
@@ -387,7 +393,8 @@ begin
   end;
 end;
 
-{ Draw the tab line: the current tab all in white, the others in yellow with their keys in white. }
+{ Draw the tab line in the bottom line's colors: the current tab in inverse video (black on white), the others in
+  light green with their keys in white. }
 procedure DrawTabs(cur: Byte);
 var
   tab: Byte;
@@ -397,9 +404,9 @@ begin
   for tab := TAB_ALL to TAB_LAST do begin
     name := tabNames[tab];
     if tab = cur then
-      TextRend.DisplayString(tabCols[tab], TAB_ROW, White, name)
+      TextRend.DisplayStringOn(tabCols[tab], TAB_ROW, Black, White, name)
     else begin
-      TextRend.DisplayString(tabCols[tab], TAB_ROW, Yellow, name);
+      TextRend.DisplayString(tabCols[tab], TAB_ROW, LightGreen, name);
       TextRend.DisplayString(tabCols[tab] + tabKeyAt[tab] - 1, TAB_ROW, White, name[tabKeyAt[tab]]);
     end;
   end;
@@ -441,10 +448,20 @@ begin
     ShownAmmo := bolts;
 end;
 
-{ Draw the panel under the list for creature with item highlighted (nil for none): the character's and the pool's
-  gold; its party number and name, then its armor class and damage now (CURRENT) and with item readied (NEW,
-  NewTexts), right-aligned together to the panel's edge; and its readied armor, with the shield at the right (light red
-  when item would put it away), weapon and ammunition. }
+{ Draw a figures line on row: 'Curr AC  3    Dmg 1d8+1', the label and AC and Dmg in white, the armor class
+  right-aligned to its column and the damage in light green. }
+procedure DrawFigures(row: Byte; lbl, ac, dmg: Types.TStr40);
+begin
+  TextRend.DisplayString(FIGURES_COL, row, White, lbl);
+  TextRend.DisplayString(FIGURES_COL + 5, row, White, 'AC');
+  TextRend.DisplayString(FIGURES_COL + 10 - Length(ac), row, LightGreen, ac);
+  TextRend.DisplayString(FIGURES_COL + 14, row, White, 'Dmg');
+  TextRend.DisplayString(FIGURES_COL + 18, row, LightGreen, dmg);
+end;
+
+{ Draw the panel under the list for creature with item highlighted (nil for none): its party number and name, then the
+  character's and the pool's gold; its armor class and damage now (CURR) and with item readied (NEW, NewTexts); and
+  its readied armor, with the shield at the right (light red when item would put it away), weapon and ammunition. }
 procedure DrawPanel(creature: Types.PCharRecord; item: Types.PItemRec);
 var
   cur: TCombatFigures;
@@ -453,9 +470,6 @@ var
   curDmg: Types.TStr40;
   newAc: Types.TStr40;
   newDmg: Types.TStr40;
-  acWidth: Byte;
-  dmgWidth: Byte;
-  statCol: Byte;
   n: Byte;
   num: Types.TStr40;
   name: Types.TStr40;
@@ -466,12 +480,22 @@ var
   gold: Types.TStr40;
 begin
   Border.ClearBox(PANEL_LEFT - 1, GOLD_ROW, PANEL_RIGHT + 1, AMMO_ROW);
-  gold := StrUtil.Grouped(MoneyCal.CreatureGold(creature)) + ' GP';
-  TextRend.DisplayString(PANEL_LEFT, GOLD_ROW, White, 'Char:');
-  TextRend.DisplayString(PANEL_LEFT + 6, GOLD_ROW, Yellow, gold);
-  TextRend.DisplayString(POOL_COL, GOLD_ROW, White, 'Pool:');
-  TextRend.DisplayString(POOL_COL + 6, GOLD_ROW, Yellow,
-                         StrUtil.Grouped(MoneyCal.CoinValueInGold(GameVars.treasureMoney)) + ' GP');
+  { '1: Brianna', cut to end a blank before 'Gold' }
+  num := '';
+  for n := 1 to 8 do
+    if Party.MemberAt(n) = creature then
+      num := StrUtil.NumStr(n) + ': ';
+  name := creature^.name;
+  if PANEL_LEFT + Length(num) + Length(name) > GOLD_COL - 1 then
+    name[0] := Chr(GOLD_COL - 1 - PANEL_LEFT - Length(num));
+  TextRend.DisplayString(PANEL_LEFT, GOLD_ROW, White, num);
+  TextRend.DisplayString(PANEL_LEFT + Length(num), GOLD_ROW, CharDisp.NameColor(creature), name);
+  { 'Gold  128072   15102': the character's gold and the pool's, each right-aligned to its column }
+  TextRend.DisplayString(GOLD_COL, GOLD_ROW, White, 'Gold');
+  gold := StrUtil.NumStr(MoneyCal.CreatureGold(creature));
+  TextRend.DisplayString(CHAR_GOLD_END + 1 - Length(gold), GOLD_ROW, LightGreen, gold);
+  gold := StrUtil.NumStr(MoneyCal.CoinValueInGold(GameVars.treasureMoney));
+  TextRend.DisplayString(PANEL_RIGHT + 1 - Length(gold), GOLD_ROW, LightGreen, gold);
   CharHlp.RecalcStats(creature);
   ShopBuy.GetFigures(creature, cur);
   curAc := ShopBuy.AcText(cur.ac);
@@ -484,39 +508,8 @@ begin
     newAc := curAc;
     newDmg := curDmg;
   end;
-  { 'AC 3 DMG 1d8+1', the armor classes right-aligned to the wider, the damage after; the lines end at the panel's
-    edge }
-  acWidth := Length(curAc);
-  if Length(newAc) > acWidth then
-    acWidth := Length(newAc);
-  dmgWidth := Length(curDmg);
-  if Length(newDmg) > dmgWidth then
-    dmgWidth := Length(newDmg);
-  statCol := PANEL_RIGHT + 1 - (3 + acWidth + 5 + dmgWidth);
-  TextRend.DisplayString(statCol - 8, BUYER_ROW, White, 'Current');
-  TextRend.DisplayString(statCol, BUYER_ROW, White, 'AC');
-  TextRend.DisplayString(statCol + 3, BUYER_ROW, LightGreen, StrUtil.PadLeft(curAc, acWidth));
-  TextRend.DisplayString(statCol + 4 + acWidth, BUYER_ROW, White, 'Dmg');
-  TextRend.DisplayString(statCol + 8 + acWidth, BUYER_ROW, LightGreen, curDmg);
-  TextRend.DisplayString(statCol - 4, NEW_ROW, White, 'New');
-  TextRend.DisplayString(statCol, NEW_ROW, White, 'AC');
-  TextRend.DisplayString(statCol + 3, NEW_ROW, LightGreen, StrUtil.PadLeft(newAc, acWidth));
-  TextRend.DisplayString(statCol + 4 + acWidth, NEW_ROW, White, 'Dmg');
-  TextRend.DisplayString(statCol + 8 + acWidth, NEW_ROW, LightGreen, newDmg);
-  { '1: Brianna', cut to end a blank before 'Current' }
-  num := '';
-  for n := 1 to 8 do
-    if Party.MemberAt(n) = creature then
-      num := StrUtil.NumStr(n) + ': ';
-  name := creature^.name;
-  if PANEL_LEFT + Length(num) + Length(name) > statCol - 9 then begin
-    if statCol - 9 - PANEL_LEFT - Length(num) > 0 then
-      name[0] := Chr(statCol - 9 - PANEL_LEFT - Length(num))
-    else
-      name := '';
-  end;
-  TextRend.DisplayString(PANEL_LEFT, BUYER_ROW, White, num);
-  TextRend.DisplayString(PANEL_LEFT + Length(num), BUYER_ROW, CharDisp.NameColor(creature), name);
+  ShopBuy.DrawFigures(CURR_ROW, 'Curr', curAc, curDmg);
+  ShopBuy.DrawFigures(NEW_ROW, 'New', newAc, newDmg);
   { the gear: armor, with the shield at the right edge, then the weapon and the ammunition }
   shield := creature^.equipped[C_EQUIP.SHIELD];
   armorWidth := PANEL_RIGHT - PANEL_LEFT + 1;
@@ -621,10 +614,12 @@ begin
       menu := 'Showing all';
     MenuCore.extraKeys := tabKeys;
     MenuCore.memberKeysToCaller := True;
+    { F1: the screen's keys (KeyHelp.SHOP_KEYS) }
+    MenuCore.helpToCaller := True;
     if shown.count = 0 then begin
       c := MenuCore.MenuHorizontal('Shop: ', menu + ' Exit', LightMagenta, LightGreen, White, True, False, ext);
-      { only Alt-n among the extended keys: the list has nothing to move through }
-      if ext and (Party.AltMember(c) = 0) then
+      { only Alt-n and F1 among the extended keys: the list has nothing to move through }
+      if ext and (Party.AltMember(c) = 0) and (c <> C_KEYS.F1) then
         c := ' ';
     end else begin
       MenuCore.lineScroll := True;
@@ -637,7 +632,11 @@ begin
       if MenuCore.moved then
         c := ' ';
     end;
-    if Party.AltMember(c) > 0 then begin
+    if c = C_KEYS.F1 then begin
+      KeyHelp.ShowPage(@KeyHelp.SHOP_KEYS, KeyHelp.SHOP_LINES);
+      ShopBuy.DrawFrame;
+      rebuild := True;
+    end else if Party.AltMember(c) > 0 then begin
       member := Party.MemberAt(Party.AltMember(c));
       if (member <> nil) and (member <> creature) then begin
         creature := member;

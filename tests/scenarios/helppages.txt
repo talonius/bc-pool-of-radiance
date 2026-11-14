@@ -1,0 +1,39 @@
+# F1 on the shop's Buy screen and the Items screen, from save A at the New Phlan arms shop (walked to as shop does).
+# At the counter Buy opens the new screen; F1 lists its keys (the moves, Buy, the filter, the tab keys, Alt-n as the
+# buyer) and Exit gives the screen back. From the counter View, Items, F1 lists its keys (the item actions, the
+# weapon-set keys 1 and 2, Alt-n) and Exit gives the items back. The golden build has neither page, so it fails until
+# the goldens are recorded from a build with them.
+boot NORAND
+ignore POOL OF RADIANCE V
+wait RADIANCE
+press l a
+wait AREA
+# Walk east twice and south nine times to (7,11), then enter the shop at (8,11).
+press down up up right up up up up up up up up left up
+wait YES NO
+press y
+wait BUY
+press b
+wait BUY 20
+checkpoint stock
+press f1
+wait HELP 20
+checkpoint shop-keys
+press esc
+wait BUY 20
+checkpoint stock-back
+press esc
+wait BUY 20
+press v
+wait EXIT 20
+press i
+wait READY|EXIT 20
+checkpoint items
+press f1
+wait HELP 20
+checkpoint item-keys
+press esc
+wait READY|EXIT 20
+checkpoint items-back
+press esc esc
+wait BUY 20

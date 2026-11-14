@@ -1,7 +1,7 @@
 # The View page's drained levels (#1161, #1174), from repair's fixture (Brian's save, slot H) with two members drained:
 # MORRIGAN, a paladin, poked from level 9 to 7 with two drained levels and no drain log, as a save from before the log
-# (both levels shown on the paladin: "7(-2)"); and BLAIR, a fighter/magic-user/thief, from 9/9/9 to 8/8/8 with three
-# drained levels and a version 3 .chx (CHRDATH3.CHX) logging one each, the widest Level line ("8(-1)/8(-1)/8(-1)",
+# (both levels shown on the paladin: "7 (-2)"); and BLAIR, a fighter/magic-user/thief, from 9/9/9 to 8/8/8 with three
+# drained levels and a version 3 .chx (CHRDATH3.CHX) logging one each, the widest Level line ("8 (-1)/8 (-1)/8 (-1)",
 # Exp moved right). Both statuses read "Okay, Drained". GINS, undrained, keeps the old line. The golden build shows
 # neither the marks nor the secondary status, so its view checkpoints differ by design.
 boot NORAND

@@ -37,8 +37,10 @@ var
     unavailable here, and in combat they are ignored. }
   quickKeysToCaller: Boolean;
   { Set just before a MenuHorizontal call whose caller shows the Command Keys window on F1 (KeyHelp.ShowKeys), as the
-    map and camp menus do: F1 then ends the menu with ext set, with or without reinterpret. Every return clears it.
-    Without it F1 ends no menu: outside combat it says where the window is, and in combat it is ignored (#855). }
+    map and camp menus do, or a help window of its own (KeyHelp.ShowPage), as the shop's Buy screen and the Items screen
+    do: F1 then ends the menu with ext set, with or without reinterpret; MenuVertical returns C_KEYS.F1. Every return
+    clears it. Without it F1 ends no menu: outside combat it says help is not here, and in combat it is ignored
+    (#855). }
   helpToCaller: Boolean;
   { Set just before a MenuHorizontal or MenuVertical call whose caller opens a party member's items on Alt-1 to Alt-8
     (ViewChar.AltItems, #1195). MenuHorizontal then ends on them with ext set, with or without reinterpret; MenuVertical
@@ -119,7 +121,8 @@ function MenuHorizontal(query, menu: Types.TStr40; qCol, mCol, hlCol: Byte; rein
   list also sets idx=0). Any other menu key returns that key with sel set to the highlighted entry. With listOnly set, a
   list that fits on one page is drawn and #0 returned with sel=nil at once. With movesToCaller set, a key that moves the
   highlight returns too. A key in extraKeys returns as any other menu key does, on every key the list waits for; so do
-  Alt-1 to Alt-8 under memberKeysToCaller, as their scan codes. Under fullPaging a list longer than the box offers
+  Alt-1 to Alt-8 under memberKeysToCaller, as their scan codes, and F1 under helpToCaller, as C_KEYS.F1 (#59, a ';'
+  no list menu takes). Under fullPaging a list longer than the box offers
   Next and Prev on every page and marks a page with more below it. Under lineScroll the list scrolls a line at a time
   past the box's edges, stopping at its ends, with a scroll bar in the box's last column and no Next or Prev. }
 function MenuVertical(query, menu: Types.TStr40; qCol, mCol, hlCol: Byte; ulCol, ulRow, lrCol, lrRow: ShortInt;
@@ -426,7 +429,7 @@ begin
             ext := True;
             done := True;
           end else
-            Unavailable('Help is on the map and camp menus.');
+            Unavailable('No help on this menu.');
         end else if reinterpret or (memberKeysToCaller and (ch >= C_KEYS.ALT_1) and (ch <= C_KEYS.ALT_8)) then begin
           ext := True;
           done := True;
@@ -514,6 +517,8 @@ var
   toCaller: Boolean;
   { memberKeysToCaller, taken at entry as extraKeys is }
   memberKeys: Boolean;
+  { helpToCaller, taken at entry and given to every HorizontalMenu call }
+  help: Boolean;
   oldIdx: Integer;
   oldTop: Integer;
   { the caller's extraKeys, given to every HorizontalMenu call }
@@ -707,6 +712,8 @@ begin
   movesToCaller := False;
   memberKeys := memberKeysToCaller;
   memberKeysToCaller := False;
+  help := helpToCaller;
+  helpToCaller := False;
   moved := False;
   paged := fullPaging;
   fullPaging := False;
@@ -787,6 +794,7 @@ begin
         hMenu := hMenu + ' Exit';
       { Enter stays #13 here: it takes the highlighted list entry, not a bottom-line option. }
       extraKeys := keep;
+      helpToCaller := help;
       ch := MenuCore.HorizontalMenu(query, hMenu, qCol, mCol, hlCol, True, False, False, ext);
       UnhighlightLine(idx);
       oldIdx := idx;
@@ -801,6 +809,12 @@ begin
           C_KEYS.PAGE_UP: if hasPrev then MovePage(False);
           { Page Down = next page, when Next is offered }
           C_KEYS.PAGE_DOWN: if hasNext then MovePage(True);
+          { the caller's help window (helpToCaller): HorizontalMenu ends on F1 only under it }
+          C_KEYS.F1: begin
+              sel := MenuCore.FindListMember(idx, list);
+              MenuVertical := ch;
+              Exit;
+            end;
           { a party member's items, for the caller to open }
           C_KEYS.ALT_1..C_KEYS.ALT_8:
             if memberKeys then begin

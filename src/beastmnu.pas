@@ -52,8 +52,7 @@ type
 { Draws a cleared frame with a centered white title. }
 procedure DrawFrame(title: Types.TStr40);
 begin
-  TextRend.ClearScreen;
-  Border.DrawBorder(C_MSG.TEXT_LEFT, C_MSG.TEXT_TOP, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM, 0);
+  Border.ClearToFrame;
   TextRend.DisplayCentered(C_MSG.TEXT_LEFT, C_MSG.TEXT_RIGHT, TITLE_ROW, White, title);
 end;
 

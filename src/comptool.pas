@@ -173,8 +173,7 @@ var
 begin
   EvtKind.Prepare;
   FillChar(used, SizeOf(used), False);
-  TextRend.ClearScreen;
-  Border.DrawBorder(C_MSG.TEXT_LEFT, C_MSG.TEXT_TOP, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM, 0);
+  Border.ClearToFrame;
   for my := 0 to 15 do
     for mx := 0 to 15 do begin
       DrawSquare(mx, my, False);
@@ -222,8 +221,7 @@ begin
   if GameVars.gLocType = C_AREA.LOC_3D_MAP then
     DrawMap
   else begin
-    TextRend.ClearScreen;
-    Border.DrawBorder(C_MSG.TEXT_LEFT, C_MSG.TEXT_TOP, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM, 0);
+    Border.ClearToFrame;
   end;
   TextRend.DisplayCentered(C_MSG.TEXT_LEFT, C_MSG.TEXT_RIGHT, C_MSG.TEXT_TOP, White, 'Companion Tools');
 end;

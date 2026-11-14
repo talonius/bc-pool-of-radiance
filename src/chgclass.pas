@@ -293,8 +293,7 @@ var
 begin
   creature := GameVars.curChar;
   old := creature^.charClass;
-  TextRend.ClearScreen;
-  Border.DrawBorder(C_MSG.TEXT_LEFT, C_MSG.TEXT_TOP, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM, 0);
+  Border.ClearToFrame;
   TextRend.DisplayCentered(C_MSG.TEXT_LEFT + 1, C_MSG.TEXT_RIGHT - 1, TITLE_ROW, LightCyan,
                            'Dual Class ' + creature^.name);
   TextRend.DisplayString(LABEL_COL, NOW_ROW, LightGreen, 'Now');

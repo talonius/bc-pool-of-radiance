@@ -64,7 +64,11 @@ implementation
 
 uses Crt, GameDefs, GameVars, DaxIo, TextRend, Border, CharHlp, MenuCore, Portrait, CbtMap, Money, Magic, FxEngine,
   C_EFFECT, C_EQUIP, C_KEYS, C_LEVEL, C_STATUS, C_IFC, C_STAT, C_MONEY, C_SAVE, Vault, Stats, StrUtil, CharDisp,
-  MoneyCal, C_MSG, ClassCal, C_ITEM, C_SPELL, SpellInf, Party;
+  MoneyCal, C_MSG, ClassCal, C_ITEM, C_SPELL, SpellInf, Party, KeyHelp;
+
+const
+  { the character sheet's right column: Exp on the Level line, and Encumbrance under it (PrintCombatStats) }
+  RIGHT_COL = 22;
 
 var
   { the last character traded to, offered first by the next trade; ViewCharMenu starts it at curChar }
@@ -90,13 +94,13 @@ begin
   TextRend.DisplayMessageWindow(1, 21, 38, 22, Yellow, clearFirst, s);
 end;
 
-{ The Level line's mark after a class's level for the n levels drained from it (#1161): '(-n)', '' when none. }
+{ The Level line's mark after a class's level for the n levels drained from it (#1161): ' (-n)', '' when none. }
 function DrainMark(n: Byte): Types.TStr40;
 begin
   if n = 0 then
     DrainMark := ''
   else
-    DrainMark := '(-' + StrUtil.NumStr(n) + ')';
+    DrainMark := ' (-' + StrUtil.NumStr(n) + ')';
 end;
 
 { Draw the level of class cls at levelCol of levelRow in color, with its drain mark in red after it (DrainMark),
@@ -163,10 +167,31 @@ begin
   SecondaryStatus := s;
 end;
 
+{ Draw the secondary statuses s (SecondaryStatus) from col of row: each ', ' that joins one on in green, as the
+  status before it is, and each status in red. }
+procedure DrawSecondaryStatus(col, row: Byte; s: Types.TStr40);
+var
+  i: Byte;
+  start: Byte;
+begin
+  i := 1;
+  while i <= Length(s) do begin
+    if (s[i] = ',') and (i < Length(s)) and (s[i + 1] = ' ') then begin
+      TextRend.DisplayString(col + i - 1, row, LightGreen, ', ');
+      Inc(i, 2);
+    end else begin
+      start := i;
+      while (i <= Length(s)) and (s[i] <> ',') do
+        Inc(i);
+      TextRend.DisplayString(col + start - 1, row, LightRed, Copy(s, start, i - start));
+    end;
+  end;
+end;
+
 { Draw creature's character sheet; the portrait is curChar's (Portrait.DisplayCharPortrait), which every caller shows.
   A dual-classed human's class and level lines show the classes it has left too (DrawDualClass). A class that lost
   levels to energy drains has their count after its level, in red (DrainMark, #1161); a mark that would run into Exp
-  moves it right. The status has its secondary statuses after it, in red (SecondaryStatus). }
+  moves it right. The status has its secondary statuses after it, in red joined in green (DrawSecondaryStatus). }
 procedure DisplayChar(creature: Types.PCharRecord);
 var
   row: Byte;
@@ -177,8 +202,7 @@ var
   multi: Boolean;
   drained: Types.TClassCounts;
 begin
-  TextRend.ClearScreen;
-  Border.DrawBorder(C_MSG.TEXT_LEFT, C_MSG.TEXT_TOP, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM, 0);
+  Border.ClearToFrame;
   CharDisp.DisplayCreatureName(creature, 1, 1, False);
   { C_NPC.FLAG set: not a party member }
   if CharHlp.IsNpc(creature) then
@@ -218,9 +242,10 @@ begin
         multi := True;
       end;
   end;
-  { Exp in its column, or a column past drain marks that reach it: a triple class drained in each still fits }
-  if col < 16 then
-    col := 16;
+  { Exp lined up with Encumbrance, or a column past drain marks that reach it: a triple class drained in each
+    still fits }
+  if col < RIGHT_COL - 1 then
+    col := RIGHT_COL - 1;
   TextRend.DisplayString(col + 1, 15, White, 'Exp ' + StrUtil.NumStr(creature^.experience));
   ViewChar.PrintCombatStats;
   row := 20;
@@ -239,7 +264,7 @@ begin
   s := GameDefs.statusNames[creature^.status];
   TextRend.DisplayString(8, row, LightGreen, s);
   { the longest, 'Unconscious, Poisoned, Drained', ends in column 37 }
-  TextRend.DisplayString(8 + Length(s), row, LightRed, ViewChar.SecondaryStatus(creature));
+  ViewChar.DrawSecondaryStatus(8 + Length(s), row, ViewChar.SecondaryStatus(creature));
   if (GameVars.portraitsAll <> 0) and (GameVars.portraitsOn <> 0) and Portrait.PlayerPortraitsHere then
     Portrait.DisplayCharPortrait;
 end;
@@ -348,8 +373,7 @@ const
 { Clear the screen, draw the border and centre creature's name in light cyan on row 2: the top of a More Info page. }
 procedure MoreHeading(creature: Types.PCharRecord);
 begin
-  TextRend.ClearScreen;
-  Border.DrawBorder(C_MSG.TEXT_LEFT, C_MSG.TEXT_TOP, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM, 0);
+  Border.ClearToFrame;
   TextRend.DisplayCentered(C_MSG.TEXT_LEFT + 1, C_MSG.TEXT_RIGHT - 1, 2, LightCyan, creature^.name);
 end;
 
@@ -360,8 +384,8 @@ begin
   TextRend.DisplayCentered(C_MSG.TEXT_LEFT + 1, C_MSG.TEXT_RIGHT - 1, 4, White, title);
 end;
 
-{ The Game Stats page: the creature's twelve counters in this game, from row 6, coin in gold; b nil reads every counter
-  as 0. }
+{ The Game Stats page: the creature's twelve counters in this game, from row 6, coin in gold, each name in light green
+  and its count in white; b nil reads every counter as 0. }
 procedure DrawGameStats(creature: Types.PCharRecord; b: Stats.PStatBlock);
 var
   i: Byte;
@@ -376,19 +400,21 @@ begin
     if i = Stats.COIN_LOOTED then
       n := n div GameDefs.coinValues[C_MONEY.GOLD];
     Str(n, s);
-    TextRend.DisplayString(3, 5 + i, White, Stats.NAMES[i]);
-    TextRend.DisplayString(36 - Length(s), 5 + i, LightGreen, s);
+    TextRend.DisplayString(3, 5 + i, LightGreen, Stats.NAMES[i]);
+    TextRend.DisplayString(36 - Length(s), 5 + i, White, s);
   end;
 end;
 
 { The Kill Count page from entry top of order (b's kinds, sorted by name): left then right along each row, each count
-  right-aligned to the widest and its name after it, cut to fit the column, and "(more)" above or below when entries are
-  hidden there. }
+  right-aligned to the widest in white and its name after it in light green, cut to fit the column, and "(more)" above
+  or below when entries are hidden there. }
 procedure DrawKills(creature: Types.PCharRecord; b: Stats.PStatBlock; var order: TKillOrder; kinds, top: Byte);
 var
   i: Byte;
   k: Byte;
   width: Byte;
+  col: Byte;
+  row: Byte;
   s: Types.TStr40;
 begin
   ViewChar.MoreTitle(creature, 'Kill Count');
@@ -405,9 +431,11 @@ begin
   for k := 0 to KILLS_SHOWN - 1 do
     if top + k <= kinds then begin
       i := order[top + k];
-      s := StrUtil.PadLeft(StrUtil.NumStr(b^.kills[i].count), width) + ' ' +
-           Copy(b^.kills[i].name, 1, KILL_COL_WIDTH - 2 - width);
-      TextRend.DisplayString(2 + (k mod 2) * KILL_COL_WIDTH, KILL_TOP + k div 2, LightGreen, s);
+      col := 2 + (k mod 2) * KILL_COL_WIDTH;
+      row := KILL_TOP + k div 2;
+      s := StrUtil.PadLeft(StrUtil.NumStr(b^.kills[i].count), width);
+      TextRend.DisplayString(col, row, White, s);
+      TextRend.DisplayString(col + width + 1, row, LightGreen, Copy(b^.kills[i].name, 1, KILL_COL_WIDTH - 2 - width));
     end;
   if top + KILLS_SHOWN <= kinds then
     MenuCore.DrawMore(1, 38, KILL_TOP + KILL_ROWS);
@@ -685,7 +713,7 @@ begin
     (#836, #911) }
   TextRend.DisplayString(col, row + 2, White, 'Att/Rd        ');
   TextRend.DisplayString(col + 7, row + 2, LightGreen, StrUtil.HalvesStr(p^.attacks));
-  col := 22;
+  col := RIGHT_COL;
   TextRend.DisplayString(col, row, White, 'Encumbrance      ');
   TextRend.DisplayString(col + 12, row, LightGreen, StrUtil.NumStr(p^.encumbrance));
   mv := CharHlp.HasteSlowRate(p, p^.movementCur);
@@ -860,8 +888,7 @@ begin
     v[14] := CharHlp.BaseItem(itemType)^.dmgLgRolls;
     v[15] := CharHlp.BaseItem(itemType)^.dmgLgDice;
   end;
-  TextRend.ClearScreen;
-  Border.DrawBorder(C_MSG.TEXT_LEFT, C_MSG.TEXT_TOP, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM, 0);
+  Border.ClearToFrame;
   for i := 1 to 15 do begin
     case i of
       1: s := 'itemtype:';
@@ -973,7 +1000,7 @@ end;
   moves. Outside combat Alt-n switches the menu to member n's items in place (#1195): member n becomes the current
   character and the one Trade offers first, and the highlight goes to its first item. It does not open a second menu,
   so Escape still leaves to whatever opened the first. Alt-n for the member shown, or for no member, does nothing; for
-  a member with no items it says so and stays. }
+  a member with no items it says so and stays. F1 lists the screen's keys (KeyHelp.ITEM_KEYS). }
 procedure UseItemMenu(var done: Boolean);
 var
   ch: Char;
@@ -1011,8 +1038,7 @@ begin
       p := p^.next;
     end;
     if needRedraw or (GameVars.invRedraw <> 0) then begin
-      TextRend.ClearScreen;
-      Border.DrawBorder(C_MSG.TEXT_LEFT, C_MSG.TEXT_TOP, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM, 0);
+      Border.ClearToFrame;
       CharDisp.DisplayCreatureName(creature, 1, 1, True);
       TextRend.DisplayString(Length(creature^.name) + 4, 1, LightGreen, 'Items');
       Border.DrawWindow(1, 3, 38, 22, 0, Black, '');
@@ -1033,11 +1059,18 @@ begin
     { a move returns, so that the line follows the highlighted item }
     MenuCore.movesToCaller := True;
     MenuCore.memberKeysToCaller := GameVars.ifcState <> C_IFC.IN_COMBAT;
+    { F1: the screen's keys, the weapon sets' among them (KeyHelp.ITEM_KEYS) }
+    MenuCore.helpToCaller := True;
     ch := MenuCore.MenuVertical('', s, LightMagenta, LightGreen, White, 1, 5, 38, 22,
                                 creature^.itemsAddr, True, vmRedraw, idx, sel);
     if MenuCore.moved then
       { Page Up's scan code is 'I': a move is no choice }
       ch := ' '
+    else if ch = C_KEYS.F1 then begin
+      KeyHelp.ShowPage(@KeyHelp.ITEM_KEYS, KeyHelp.ITEM_LINES);
+      needRedraw := True;
+      ch := ' ';
+    end
     else if Party.AltMember(ch) > 0 then begin
       member := Party.MemberAt(Party.AltMember(ch));
       if (member <> nil) and (member <> creature) then
