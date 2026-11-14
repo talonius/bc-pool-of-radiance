@@ -1,0 +1,51 @@
+View Character under the design rules (docs/ui-design.md); view-character.png
+is drawn by scripts/mock-render/character.py. A try-out of the rules, not yet
+a plan for the screen.
+
++=========+ TARVIN +==================+
+|                                      |
+| MALE ELF AGE 130                     |
+| CHAOTIC GOOD                         |
+| FIGHTER/MAGIC-USER                   |
+|                                      |
+| ABILITIES         MONEY              |
+| STR 18(50)                   GEMS  4 |
+| INT 17                 PLATINUM  120 |
+| WIS 10                     GOLD 2210 |
+| DEX 17                   SILVER   35 |
+| CON 15                               |
+| CHA 13                               |
+|                                      |
+| LEVEL 5/5           EXP 42000        |
+|                                      |
+| COMBAT                               |
+| AC 2  THAC0  15    ENCUMBRANCE 1150  |
+| HP 19 DAMAGE 1D8+4 MOVEMENT    24    |
+|       ATT/RD 3/2                     |
+|                                      |
+| WEAPON LONG SWORD +1                 |
+| STATUS OKAY, POISONED                |
++======================================+
+ITEMS SPELLS TRADE DROP EXIT
+
+Color Key:
+    TARVIN (the title)          LIGHT CYAN (the name's color: LIGHT MAGENTA
+                                when ready to train)
+    ABILITIES, MONEY, COMBAT    LIGHT MAGENTA (headers)
+    STR, GEMS, LEVEL, AC, ...   WHITE (keys)
+    their values                LIGHT GREEN
+    MALE ELF, CHAOTIC GOOD, ... LIGHT GREEN (values without a key)
+    STR 18(50), MOVEMENT 24     LIGHT BLUE: improved (a Strength spell,
+                                haste); the color on trial for "improved"
+    HP 19                       YELLOW: not normal (injured)
+    POISONED                    LIGHT RED: bad
+
+Changes from today's screen:
+    The name is the title in the top edge, which gives back row 1.
+    A space between the border and the text.
+    Headers over the abilities, the money and the combat figures.
+    The ability names are keys (white), their scores values (green); today
+    both are green. (More Info's Game Stats page has them the other way
+    round: names green, counts white.)
+    No Armor line here (today: under Weapon), for the room; to decide.
+    The portrait, where it is shown, is not placed yet.

@@ -1,25 +1,49 @@
++==========+ LOAD/SAVE GAME +==========+
+|                                      |
+| A: SAVE GAME A              8:57 PM  +
+|    NEW PHLAN             2026/10/21  ^
+|                                      #
+| B: BIG FIGHT                8:39 PM  #
+|    VALHINGEN GRAVES      2026/10/21  #
+|                                      #
+| C: SPELLED UP               8:03 PM  .
+|    YARASH'S PYRAMID      2026/10/21  .
+|                                      .
+| D: SAVE GAME D             12:04 PM  .
+|    TRAINING HALL         2026/10/17  .
+|                                      .
+| E: SAVE GAME                8:47 PM  .
+|    VALHINGEN GRAVES      2026/10/21  .
+|                                      .
+| I: SAVE GAME I              9:01 PM  .
+|    PODAL PLAZA           2026/09/08  .        
+|                                      .
+| J: SAVE GAME J              7:00 PM  ^
+|    NEW PHLAN             2026/11/12  +
+|                                      |
 +======================================+
-|            LOAD/SAVE GAME            |
-+======================================+
-|                                      |
-| A: SAVE GAME A                 20:57 |
-|    NEW PHLAN              2026/10/21 |
-|                                      |
-| B: BIG FIGHT                   20:39 |
-|    VALHINGEN GRAVES       2026/10/21 |
-|                                      |
-| C: SPELLED UP                  20:03 |
-|    YARASH'S PYRAMID       2026/10/21 |
-|                                      |
-| D: SAVE GAME D                 12:04 |
-|    TRAINING HALL          2026/10/17 |
-|                                      |
-| E: SAVE GAME                   20:47 |
-|    VALHINGEN GRAVES       2026/10/21 |
-|                                      |
-| I:                             21:01 |
-|    PODAL PLAZA                       |
-|                                      |
-|                 (MORE)               |
-|======================================+
-GAME: NEXT PREV LOAD QUIT EXIT
+GAME: LOAD EXIT QUIT TO DOS 
+
+L: LOAD
+S: SAVE
+Q: QUIT TO DOS
+ESC/X: EXIT
+
+GAME: in magenta
+Command keys: white
+Other menu text: green
+
+LOAD gets replaced with SAVE when appropriate.
+Game description should be kept to a maximum of 20 characters.
+Letters for the saved games are in white.
+QUIT TO DOS is one menu selection; Q is command (white).
+EXIT doesn't have a command key because E is a valid save game.
+
+= is the horizontal border
+| is the vertical border
++ is a gold border box
+# is the recolored bar
+. is the recolored border (gray)
+^ is the up and down arrow
+
+selector to bar length isn't to scale.

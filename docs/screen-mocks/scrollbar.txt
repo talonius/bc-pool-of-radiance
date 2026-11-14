@@ -1,0 +1,157 @@
+The scroll bar (scrollbar.png, scrollbar-edge.png)
+
+A list longer than its box shows a scroll bar in the box's right border.
+The bar replaces the border's edge between the box's corners (or the joints
+where another box meets that edge). When the list fits the box there is no
+bar and the border is drawn as usual.
+
+Load/Save Game, a full-screen box: the bar is column 39, rows 1 to 22,
+between the corner boxes on rows 0 and 23.
+
++==========+ LOAD/SAVE GAME +==========+
+|                                      ^
+| A: SAVE GAME A              8:57 PM  T
+|    NEW PHLAN             2026/10/21  #
+|                                      #
+| B: BIG FIGHT                8:39 PM  #
+|    VALHINGEN GRAVES      2026/10/21  #
+|                                      #
+| C: SPELLED UP               8:03 PM  G
+|    YARASH'S PYRAMID      2026/10/21  #
+|                                      #
+| D: SAVE GAME D             12:04 PM  #
+|    TRAINING HALL         2026/10/17  #
+|                                      #
+| E: SAVE GAME                8:47 PM  B
+|    VALHINGEN GRAVES      2026/10/21  :
+|                                      :
+| I: SAVE GAME I              9:01 PM  :
+|    PODOL PLAZA           2026/09/08  :
+|                                      :
+| J: SAVE GAME J              7:00 PM  :
+|    NEW PHLAN             2026/11/12  :
+|                                      v
++======================================+
+
+^ up arrow        T knob, top cell      G knob, grip cell
+v down arrow      # knob, middle cell   : track
+                  B knob, bottom cell
+
+The Buy screen's list box: the bar is column 39, rows 3 to 15, between the
+joints on rows 2 and 16. Its old bar inside the box (column 37, '*' and
+'-') goes, and the list takes those columns back.
+
+
+COLORS
+
+Light comes from the upper left, as on the gold corner boxes: lit edges are
+on the top and left, shadows on the bottom and right. Three greys and black:
+
+    W  white        EGA White (15)
+    g  grey         EGA Light Gray (7)
+    d  dark grey    EGA Dark Gray (8)
+    .  black        EGA Black (0)
+
+
+THE PIECES
+
+Each piece is one 8x8 cell, drawn as the border glyphs are. The pictures
+below are the pixels, row 1 at the top, column 1 at the left.
+
+Up arrow: a grey button, the arrow white, its shadow black. The shadow is
+the arrow moved one pixel down and one right, wherever grey shows.
+
+    --------         -- grey
+    ---*----         *  white
+    --***---         .  black
+    -*****--
+    --***..-
+    --***.--
+    ---...--
+    --------
+
+Down arrow:
+
+    --------
+    --***---
+    --***.--
+    --***.--
+    -*****--
+    --***..-
+    ---*..--
+    ----.---
+
+Track, the bar below and above the knob: a checkerboard of dark grey and
+black, dark grey in each cell's top-left pixel, so that the cells join
+seamlessly.
+
+    d.d.d.d.
+    .d.d.d.d
+    d.d.d.d.
+    .d.d.d.d
+    d.d.d.d.
+    .d.d.d.d
+    d.d.d.d.
+    .d.d.d.d
+
+Knob: a bevelled grey bar the full width of the cell. Its left edge is
+white and its right edge dark grey on every cell; its top cell has a white
+top edge and its bottom cell a dark grey bottom edge.
+
+    top          middle       bottom       one cell only
+    WWWWWWWd     Wggggggd     Wggggggd     WWWWWWWd
+    Wggggggd     Wggggggd     Wggggggd     Wggggggd
+    Wggggggd     Wggggggd     Wggggggd     Wggggggd
+    Wggggggd     Wggggggd     Wggggggd     Wggggggd
+    Wggggggd     Wggggggd     Wggggggd     Wggggggd
+    Wggggggd     Wggggggd     Wggggggd     Wggggggd
+    Wggggggd     Wggggggd     Wggggggd     Wggggggd
+    Wggggggd     Wggggggd     dddddddd     dddddddd
+
+Grip: the gold corner box (symbol 276) recolored as a middle cell: yellow
+to grey, its white highlights stay white, its brown shadows to dark grey;
+the knob's white left edge and dark grey right edge are kept.
+
+    Wggggggd
+    WWWWWWdd
+    WWggggdd
+    WWgWdgdd
+    WWgddgdd
+    WWggggdd
+    Wddddddd
+    Wggggggd
+
+
+THE KNOB'S SIZE AND PLACE
+
+The arrows take the bar's first and last rows; the knob moves in the rows
+between them (the track rows). Its length and position come from
+MenuCore.ScrollThumb, as the Buy screen's bar does now: the share of the
+track the knob covers is the share of the list shown, at least one row; it
+touches the up arrow only at the list's start and the down arrow only at
+its end.
+
+Load/Save shows 7 of up to 11 slots on 20 track rows: a knob of 13 rows.
+
+The grip goes on the knob's middle cell: cell size div 2, counting from 0
+(the lower of the two middle cells when the size is even). A knob of 1 or 2
+cells has no grip; 1 cell uses the one-cell picture.
+
+
+THE ART
+
+The pieces are made by the Data Builder and stored in a DAX file, with the
+other data it builds, so the game draws finished cells and recolors
+nothing while it runs:
+
+    up arrow, down arrow    drawn from the pictures above (symbol 256's
+                            and 258's arrows redrawn, their combat grey
+                            gone)
+    track                   the checkerboard above
+    knob top, middle,       the pictures above
+      bottom, one cell
+    grip                    symbol 276 recolored as above
+
+The game draws them through the 8x8 symbol path (Sym8x8) at the border's
+cells. Anything that redraws the border under a list redraws the bar after
+it.
