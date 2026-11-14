@@ -22,7 +22,7 @@ def extra(p):
 
 
 a = m.main_args(__doc__, extra)
-s = m.Screen(a.dax)
+s = m.screen(a)
 s.frame(dividers=(2, 16))
 # tabs: the current one all white, the rest green with their command keys white
 x = 1

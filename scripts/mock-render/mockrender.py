@@ -85,6 +85,8 @@ class Screen:
         self.font = blocks[201]
         self.syms = blocks[202]
         self.px = [[BLACK] * 320 for _ in range(200)]
+        # text colors drawn in place of others (main_args' --dim fills it); the border and symbols are not changed
+        self.text_map = {}
 
     def symbol(self, n, remap=None):
         """Symbol n (256..286) as an 8x8 cell, its colors remapped through remap."""
@@ -105,6 +107,8 @@ class Screen:
 
     def text(self, col, row, s, fg, bg=BLACK):
         """s in the game font from (col, row), as TextRend.DisplayStringOn draws it (upper-cased, mod 64)."""
+        fg = self.text_map.get(fg, fg)
+        bg = self.text_map.get(bg, bg)
         for i, ch in enumerate(s):
             g = ord(ch.upper()) % 64
             for r in range(8):
@@ -194,6 +198,20 @@ def main_args(description, extra=None):
     p = argparse.ArgumentParser(description=description)
     p.add_argument('out', help='png to write')
     p.add_argument('--dax', default=DEFAULT_DAX, help='8X8D1.DAX (default: drive_c/POOLRAD)')
+    p.add_argument('--dim', action='store_true', help='text in the dim colors (0-7) in place of the bright')
     if extra:
         extra(p)
     return p.parse_args()
+
+
+# each bright color's dim partner: White to Light Gray, Yellow to Brown, the rest less 8
+DIM = {c: c - 8 for c in range(9, 16)}
+DIM[WHITE] = LIGHT_GRAY
+
+
+def screen(a):
+    """A Screen for main_args' arguments: its DAX, and the dim colors under --dim."""
+    s = Screen(a.dax)
+    if a.dim:
+        s.text_map = dict(DIM)
+    return s

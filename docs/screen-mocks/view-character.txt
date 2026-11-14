@@ -35,8 +35,8 @@ Color Key:
     STR, GEMS, LEVEL, AC, ...   WHITE (keys)
     their values                LIGHT GREEN
     MALE ELF, CHAOTIC GOOD, ... LIGHT GREEN (values without a key)
-    STR 18(50), MOVEMENT 24     LIGHT BLUE: improved (a Strength spell,
-                                haste); the color on trial for "improved"
+    STR 18(50), MOVEMENT 24     LIGHT GREEN ON BLUE: improved (a Strength
+                                spell, haste); on trial for "improved"
     HP 19                       YELLOW: not normal (injured)
     POISONED                    LIGHT RED: bad
 

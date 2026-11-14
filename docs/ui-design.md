@@ -82,7 +82,7 @@ available. Note the EGA names: **Yellow** (14) is the bright yellow; the dim one
 | Creature name, hostile | Yellow (14) | |
 | Not normal (injured hit points, a warning) | Yellow (14) | |
 | Bad, negative (a loss, a failure, a worse value) | Light Red (12) | |
-| Improved (a better value, a bonus) | **On trial**: Light Blue (9) | see below |
+| Improved (a better value, a bonus) | **On trial**: the value's Light Green on a Blue (1) background | see below |
 | Unavailable (a command or entry that cannot be taken) | Dark Gray (8) | |
 | Scroll bar | White, Light Gray, Dark Gray, Black | scrollbar.txt |
 
@@ -103,11 +103,21 @@ trying on real screens. `loadsave.py --title-color <color>` renders the choices.
 
 Status text (a condition, a spell in effect, a comparison) sits badly in green: green is every value, so a status in
 green does not stand out from them. Yellow already means "not normal" and Light Red "bad", so what is missing is a color
-for **improved** that is not green. **Light Blue** (9) is on trial: the View Character mock
-(`docs/screen-mocks/view-character.png`) shows a Strength spell's score and haste's movement in it, beside injured hit
-points in yellow and Poisoned in light red. It is darker than the other bright colors, which may suit a status, or may
-read as dim; it needs a look on the real screen. `character.py --better <color>` renders others. The shop's comparison
-(NEW AC and DMG against CURR) is the next place to try it.
+for **improved** that is not plain green.
+
+**On trial: the value's own Light Green on a Blue (1) background.** It stays a value (green) and is marked as changed
+by the background, so it keeps to the key/value rule. The View Character mock (`docs/screen-mocks/view-character.png`)
+shows a Strength spell's score and haste's movement that way, beside injured hit points in yellow and Poisoned in light
+red. White on Blue is the second choice.
+
+Tried and set aside: Light Blue (9) text alone looked dim beside the other bright colors; black on any bright background
+reads as a second cursor (the cursor is black on White, #1160), and the font's thin strokes break up in black; White on
+Green or Cyan is loud and blurs "green is a value"; White on Dark Gray clashes with unavailable.
+
+A background block is louder than a text color, and the font fills its 8x8 cell, so the block hugs the letters. That
+suits a few values on a screen; a screen full of improved values may be too busy, which the real game will show.
+`character.py --better <color> --better-bg <color>` renders other pairs. The shop's comparison (NEW AC and DMG against
+CURR) is the next place to try it.
 
 ### In code
 
@@ -263,7 +273,7 @@ frame code may need more than one cell's width to place them.
 ## Open questions
 
 1. Title color: White, Yellow, Light Cyan or another (Color).
-2. Light Blue for "improved": keep it after seeing it on the real screen? (Color)
+2. Light Green on Blue for "improved": keep it after seeing it on the real screen? (Color)
 3. Whether combat's menus can take the arrows between moves (Keys).
 4. How the focused section shows (Keys, Focus).
 

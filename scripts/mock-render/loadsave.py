@@ -29,7 +29,7 @@ def extra(p):
 
 
 a = m.main_args(__doc__, extra)
-s = m.Screen(a.dax)
+s = m.screen(a)
 s.frame()
 s.title('LOAD/SAVE GAME', m.color(a.title_color))
 for k, (letter, desc, clock, area, date) in enumerate(SLOTS):
