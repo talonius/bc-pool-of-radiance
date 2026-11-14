@@ -501,7 +501,7 @@ begin
   repeat
     ViewChar.DisplayChar(GameVars.curChar);
     key := MenuCore.MenuHorizontal('', 'Abilities Levels Gear Magic Health Exit', LightMagenta, LightGreen, White,
-                                   False, False, ext);
+                                   True, False, ext);
     if ext then begin
       if key in [C_KEYS.HOME, C_KEYS.END_KEY, C_KEYS.UP, C_KEYS.DOWN] then
         Party.SelectPrevNextChar(key);
