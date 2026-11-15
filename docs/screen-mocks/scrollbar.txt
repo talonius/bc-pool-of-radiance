@@ -140,9 +140,12 @@ cells has no grip; 1 cell uses the one-cell picture.
 
 THE ART
 
-The pieces are made by the Data Builder and stored in a DAX file, with the
-other data it builds, so the game draws finished cells and recolors
-nothing while it runs:
+The pieces are made by the Data Builder and stored in the merged 8X8D.DAX
+as block 250, with the other data it builds, so the game draws finished
+cells, recolors nothing while it runs, and the cells can be looked at and
+changed in the archive (scripts/mock-render/glyphs.py --dax 8X8D.DAX shows
+them). src/barart.pas holds the pictures; block 250 is a picture as symbol
+block 202 is, 202's header with 8 frames:
 
     up arrow, down arrow    drawn from the pictures above (symbol 256's
                             and 258's arrows redrawn, their combat grey
@@ -152,6 +155,15 @@ nothing while it runs:
       bottom, one cell
     grip                    symbol 276 recolored as above
 
-The game draws them through the 8x8 symbol path (Sym8x8) at the border's
-cells. Anything that redraws the border under a list redraws the bar after
+    symbol  287 up arrow      288 down arrow   289 track
+            290 knob top      291 knob middle  292 knob bottom
+            293 knob, one cell                 294 grip
+
+The game loads them as symbol set 5 (Sym8x8.LoadScrollBar, after the Data
+Builder has run) and draws them through the 8x8 symbol path (Put8x8Sym) at
+the border's cells. Block ids 250 to 252 are kept for data the port adds:
+no shipped archive uses them, and the Data Builder gives no colliding block
+one. The per-disk archives, which the game reads when the merged one could
+not be built, have no block 250; then there are no cells
+(Sym8x8.HasScrollBar is False) and the bar must be drawn without them. Anything that redraws the border under a list redraws the bar after
 it.

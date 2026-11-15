@@ -1,7 +1,10 @@
-"""A sheet of the 8x8 symbols in 8X8D1.DAX: block 203 (symbols 1..) and block 202 (256..), magnified and numbered,
-transparent (light magenta) shown as magenta. For finding a symbol to draw or recolor.
+"""A sheet of the 8x8 symbols in an 8X8D archive: block 203 (symbols 1..), block 202 (256..) and, in the merged
+8X8D.DAX the Data Builder makes, block 250, the scroll bar's cells (287..; src/barart.pas), magnified and numbered,
+transparent (light magenta) shown as magenta. For finding a symbol to draw or recolor, and for checking the cells the
+Data Builder wrote.
 
-  python3 -I glyphs.py out.png
+  python3 -I glyphs.py out.png                              the shipped 8X8D1.DAX
+  python3 -I glyphs.py out.png --dax drive_c/POOLRAD/8X8D.DAX   the merged archive, with the scroll bar
 """
 import os
 import struct
@@ -18,7 +21,9 @@ blocks = {e.block_id: extract_block(data, off, e) for e in ents}
 S, COLS = 6, 16
 CELL = 8 * S + 14
 sets = []
-for rec, first in ((203, 1), (202, 256)):
+for rec, first in ((203, 1), (202, 256), (250, 287)):
+    if rec not in blocks:
+        continue
     b = blocks[rec]
     h, w, _, _, cnt = struct.unpack_from('<HHHHB', b, 0)
     p, frames = 17, []

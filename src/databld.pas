@@ -24,7 +24,7 @@ procedure BuildDataFiles;
 implementation
 
 uses {$IFDEF FPC}TpCompat, {$ENDIF}Crt, Dos, Types, C_DATA, GameVars, DataArc, DataPat, DaxIo, TextRend,
-  BldShow, StrUtil, SaveMenu, FileUtil{$IFDEF FPC}, NatFile{$ENDIF};
+  BldShow, StrUtil, SaveMenu, FileUtil, BarArt{$IFDEF FPC}, NatFile{$ENDIF};
 
 const
   { the most directory entries a family's per-disk archives may hold between them, plus the three reserved blocks }
@@ -608,9 +608,9 @@ begin
           remapBlock[remapCount] := remapBlock[hit];
         end else begin
           spare := 1;
-          while (spare < C_DATA.SOURCES_BLOCK) and (used[spare] or taken[spare]) do
+          while (spare < C_DATA.PORT_BLOCK_FIRST) and (used[spare] or taken[spare]) do
             Inc(spare);
-          if spare >= C_DATA.SOURCES_BLOCK then
+          if spare >= C_DATA.PORT_BLOCK_FIRST then
             DataBld.Fail('no spare block id left')
           else begin
             taken[spare] := True;
@@ -915,6 +915,39 @@ end;
   is decoded, each fix made when its checks pass, and the result packed into memory. A block several disks read is first
   copied for the fixed disk. Each fix is logged by its issue number. False, with failNote set, on a read error or when
   the memory for the result is not there. }
+{ Read block target's unpacked bytes (blocks^[target].rawSize of them) into raw, which holds at least that many: from
+  its per-disk archive, or, a block already in memory (disk 0), from there. False, with failNote set, when the archive
+  cannot be read. }
+function ReadBlock(fam: Byte; target: Word; raw: PBytes): Boolean;
+var
+  packedBuf: PBytes;
+  f: file;
+  ok: Boolean;
+begin
+  with blocks^[target] do
+    if disk = 0 then begin
+      DaxIo.DecompressDax(mem, Types.PByteArr(raw), packedSize, rawSize);
+      ok := True;
+    end else begin
+      GetMem(packedBuf, packedSize);
+      lastError := 0;
+      Assign(f, DataBld.GamePath(DataArc.SourceFile(fam, disk)));
+      Reset(f, 1);
+      ok := DataBld.IoOk;
+      if ok then begin
+        ok := DataBld.ReadAt(f, start, packedBuf^, packedSize);
+        Close(f);
+        n := IOResult;
+      end;
+      if ok then
+        DaxIo.DecompressDax(Types.PByteArr(packedBuf), Types.PByteArr(raw), packedSize, rawSize)
+      else
+        DataBld.Fail('reading ' + DataArc.SourceFile(fam, disk) + ': DOS error ' + StrUtil.NumStr(lastError));
+      FreeMem(packedBuf, packedSize);
+    end;
+  ReadBlock := ok;
+end;
+
 function PatchBlock(fam: Byte; first, pos: Word): Boolean;
 var
   disk: Byte;
@@ -926,9 +959,6 @@ var
   q: Word;
   raw: PBytes;
   spare: PBytes;
-  packedBuf: PBytes;
-  packedLen: Word;
-  f: file;
   note: TNote;
   why: TNote;
   ok: Boolean;
@@ -964,27 +994,11 @@ begin
       ok := DataBld.Reserve(LongInt(blocks^[target].packedSize) + 2 * room + 24);
   end;
   if ok and (note = '') then begin
-    packedLen := blocks^[target].packedSize;
     rawLen := blocks^[target].rawSize;
-    GetMem(packedBuf, packedLen);
     GetMem(raw, room);
     GetMem(spare, room);
     held := True;
-    lastError := 0;
-    Assign(f, DataBld.GamePath(DataArc.SourceFile(fam, blocks^[target].disk)));
-    Reset(f, 1);
-    ok := DataBld.IoOk;
-    if ok then begin
-      ok := DataBld.ReadAt(f, blocks^[target].start, packedBuf^, packedLen);
-      Close(f);
-      n := IOResult;
-    end;
-    if ok then
-      DaxIo.DecompressDax(Types.PByteArr(packedBuf), Types.PByteArr(raw), packedLen, rawLen)
-    else
-      DataBld.Fail('reading ' + DataArc.SourceFile(fam, blocks^[target].disk) + ' for a fix: DOS error ' +
-                   StrUtil.NumStr(lastError));
-    FreeMem(packedBuf, packedLen);
+    ok := DataBld.ReadBlock(fam, target, raw);
   end;
   if ok then begin
     q := pos;
@@ -1039,8 +1053,43 @@ begin
   ApplyPatches := ok;
 end;
 
-{ Build the family's merged archive from sources: choose ids, apply patches, add the sources, remap and version blocks,
-  write TMP\<name>.DAX, read it back and rename it to <name>.DAX. False, with failNote set, on any failure. }
+{ The 8X8D family's scroll bar block (C_DATA.SCROLL_BAR_BLOCK): BarArt's cells, made from symbol block 202 as the
+  build has it. Without block 202 there is no bar block, which the log says; the game then draws its bars without the
+  cells. False, with failNote set, only when 202 cannot be read or memory runs short. }
+function AddScrollBar(fam: Byte): Boolean;
+var
+  target: Word;
+  raw: PBytes;
+  bar: BarArt.TBarBlock;
+  len: Word;
+  ok: Boolean;
+begin
+  ok := True;
+  target := DataBld.ResolveBlock(1, 202);
+  if target = 0 then
+    DataBld.LogLine(archiveName + '.DAX: no scroll bar: block 202 is not there')
+  else begin
+    len := blocks^[target].rawSize;
+    ok := DataBld.Reserve(LongInt(blocks^[target].packedSize) + len + 24);
+    if ok then begin
+      GetMem(raw, len);
+      ok := DataBld.ReadBlock(fam, target, raw);
+      if ok then
+        if BarArt.MakeBlock(raw^, len, bar) then begin
+          DataBld.AddMemoryBlock(C_DATA.SCROLL_BAR_BLOCK, bar, BarArt.BLOCK_BYTES);
+          DataBld.LogLine(archiveName + '.DAX: scroll bar added (block ' + StrUtil.NumStr(C_DATA.SCROLL_BAR_BLOCK) +
+                          ')');
+        end else
+          DataBld.LogLine(archiveName + '.DAX: no scroll bar: block 202 is too short');
+      FreeMem(raw, len);
+    end;
+  end;
+  AddScrollBar := ok;
+end;
+
+{ Build the family's merged archive from sources: choose ids, apply patches, add the port's blocks (AddScrollBar), the
+  sources, remap and version blocks, write TMP\<name>.DAX, read it back and rename it to <name>.DAX. False, with
+  failNote set, on any failure. }
 function BuildArchive(fam: Byte): Boolean;
 var
   table: array[0..3 * MAX_REMAPS - 1] of Byte;
@@ -1052,6 +1101,8 @@ begin
   ok := DataBld.ChooseIds(fam);
   if ok then
     ok := DataBld.ApplyPatches(fam);
+  if ok and (fam = C_DATA.FAMILY_8X8D) then
+    ok := DataBld.AddScrollBar(fam);
   if ok then begin
     DataBld.AddMemoryBlock(C_DATA.SOURCES_BLOCK, sourceList, sourceListLen);
     if remapCount > 0 then begin
@@ -1112,7 +1163,7 @@ begin
       DataBld.RemoveFile(archiveName + '.DAX');
     end else begin
       for i := 1 to sourceCount do
-        if sources^[i].id >= C_DATA.SOURCES_BLOCK then
+        if sources^[i].id >= C_DATA.PORT_BLOCK_FIRST then
           DataBld.Fail('a per-disk archive uses block ' + StrUtil.NumStr(sources^[i].id));
       if failNote = '' then
         if DataBld.BuildArchive(fam) then begin

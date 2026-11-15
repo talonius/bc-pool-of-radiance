@@ -238,8 +238,9 @@ const
     commands: (255, 0, 1, 2);
     damage: 3;
     combat: (4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14));
-  { The first symbol of each 8x8 symbol set; set 4 ends at 286 }
-  symSetFirst: array[0..4] of Word = (1, 46, 116, 186, 256);
+  { The first symbol of each 8x8 symbol set; set 4 ends at 286, and set 5, the scroll bar's cells (Sym8x8.BAR_FIRST),
+    at 294 }
+  symSetFirst: array[0..5] of Word = (1, 46, 116, 186, 256, 287);
   { Direction steps, combat terrain, icon footprints, helpless effects }
   dirDX: array[C_DIR.NORTH..C_DIR.CENTER] of ShortInt = (
     0, 1, 1, 1, 0, -1, -1, -1, 0);

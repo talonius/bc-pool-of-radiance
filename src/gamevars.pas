@@ -212,9 +212,9 @@ var
   { Current char row. (Equivalent of WhereY.) }
   curRow: Byte;
   { Symbol sets and map tile sets }
-  { the five 8x8 symbol-set images, by set id 0..4: Sym8x8.Load8x8Set loads an 8X8D picture into a slot and Put8x8Sym
-    draws from it }
-  symbolSetPtrs: array[0..4] of Types.PImgBuf;
+  { the six 8x8 symbol-set images, by set id 0..5: Sym8x8.Load8x8Set loads an 8X8D picture into a slot and Put8x8Sym
+    draws from it; set 5 is the scroll bar's (Sym8x8.LoadScrollBar), nil when the archive has none }
+  symbolSetPtrs: array[0..5] of Types.PImgBuf;
   { Pointer to current 8x8 symbol image buffer }
   sym8x8Buf: Types.PImgBuf;
   { 2D map tile set image buffer 1 }
