@@ -3,7 +3,7 @@
   highlighted item would do to the buyer's armor class and damage (TryOn), with the shield put away for a two-handed
   weapon, arrows that fit the readied bow and quarrels that do not, a cursed weapon in the way and a class that may not
   use the item, the character left as it was each time; and the NEW line's texts (NewTexts). The scroll bar's knob
-  (MenuCore.ScrollThumb) is tested in TScroll. }
+  (Border.ScrollThumb) is tested in TScroll. }
 {$I COMPILER.INC}
 program TShopBuy;
 

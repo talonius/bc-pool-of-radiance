@@ -216,12 +216,12 @@ the Items screen have), and listed in its mock. A screen is not finished without
   and the bottom arrow only at its end. A knob of three cells or more has the grip on its middle cell.
 - The pieces are finished cells the Data Builder writes to a DAX file; the game recolors nothing while it runs.
 
-For the code: `MenuCore.ScrollThumb` sizes the knob to the list box's own height and rounds down, because the old bar
-had no arrows. The edge bar's track is two rows shorter than the section and is counted in rows while a list may count
-entries of several rows (a Load/Save slot is three), so ScrollThumb takes the track's length as well as the list's
-(`mockrender.scroll_thumb` is the version the design asks for). `Sym8x8.Put8x8Sym` stops at symbol 286, and the gold
-border set runs 276-285, so the bar's cells need symbol numbers past it.
-
+In the code: a frame (`Border.TFrame`: `InitFrame`, `AddDivider`, `DrawFrame`) draws each edge, joint and its title
+once, and `Border.FrameBar` puts the bar on a section's right edge, drawing only the cells that changed since its last
+draw and the plain edge again when the list comes to fit. The knob is `Border.ScrollThumb`, given the track's length
+apart from the list's, since the arrows take two of the bar's rows and an entry may be several rows (a Load/Save slot
+is three). The cells are block 250 of the merged 8X8D archive, symbols 287-294 (`Sym8x8.BAR_FIRST`); without them
+(the merged archive could not be built) the bar is drawn in text.
 
 ## Drawing
 
@@ -247,7 +247,7 @@ What a screen is built from. Today's units, and where they are going:
 
 | Part | Today | To be |
 |---|---|---|
-| Frame | `Border.DrawBorder` per box, `DrawWindow`, `ClearToFrame`; one joint kept by special case | a frame with dividers, joints, a title in its top edge, and a scroll bar on a section's edge |
+| Frame | `Border.DrawBorder` per box, `DrawWindow`, `ClearToFrame`; one joint kept by special case | `Border.TFrame`: dividers, joints, a title in its top edge, and a scroll bar on a section's edge (`FrameBar`); the shop's Buy screen is drawn as one |
 | List | `MenuVertical` for lists of one-line strings, its behaviour set by globals (`fullPaging`, `lineScroll`, ...); about ten screens with lists of their own (Load/Save, the journal, the kill count, spell info, help pages) | one list: a section, the entry count, rows per entry, the first entry shown and the cursor, and a routine that draws an entry. It scrolls, stops at its ends, shows the bar, and redraws only what changed. `MenuVertical` becomes a list whose entries are strings |
 | "There's more" | `(more)` (`MenuCore.DrawMore`), Next/Prev, the text bar `*`/`-` | the scroll bar |
 | Bottom line | `MenuCore.MenuHorizontal` | unchanged |

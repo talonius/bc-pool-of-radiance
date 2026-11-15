@@ -531,13 +531,17 @@ begin
   ShopBuy.DrawGear(ShopBuy.ShownAmmo(creature), PANEL_LEFT, AMMO_ROW, PANEL_RIGHT - PANEL_LEFT + 1, LightGreen);
 end;
 
-{ The screen's frame: a box for the tabs, one for the list and one for the panel, sharing their edges. }
+{ The screen's frame (Border.TFrame): the tabs, the list and the panel, sections of one border divided under the tabs
+  and under the list, so each edge is drawn once. }
 procedure DrawFrame;
+var
+  f: Border.TFrame;
 begin
   TextRend.ClearScreen;
-  Border.DrawBorder(LIST_LEFT - 1, TAB_ROW, LIST_RIGHT + 1, TAB_ROW, 0);
-  Border.DrawBorder(LIST_LEFT - 1, LIST_TOP, LIST_RIGHT + 1, LIST_BOTTOM, 0);
-  Border.DrawBorder(PANEL_LEFT - 1, GOLD_ROW, PANEL_RIGHT + 1, AMMO_ROW, 0);
+  Border.InitFrame(f, LIST_LEFT - 2, TAB_ROW - 1, LIST_RIGHT + 2, AMMO_ROW + 1, 0, '');
+  Border.AddDivider(f, LIST_TOP - 1);
+  Border.AddDivider(f, GOLD_ROW - 1);
+  Border.DrawFrame(f);
 end;
 
 procedure BuyScreen;

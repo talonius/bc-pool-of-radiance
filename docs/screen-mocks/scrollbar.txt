@@ -126,7 +126,7 @@ THE KNOB'S SIZE AND PLACE
 
 The arrows take the bar's first and last rows; the knob moves in the rows
 between them (the track rows). Its length and position come from
-MenuCore.ScrollThumb: the share of the track the knob covers is the share
+Border.ScrollThumb: the share of the track the knob covers is the share
 of the list shown, rounded to the nearest row, at least one row and, while
 the list is longer than the box, at least one row short of the track; it
 touches the up arrow only at the list's start and the down arrow only at

@@ -89,16 +89,8 @@ function PageRows(list: Types.PItemRec; ulRow, lrRow: ShortInt; paged: Boolean):
 { Draw '(more)' in white, centred between columns leftCol and rightCol on row: a list that goes on past what is shown. }
 procedure DrawMore(leftCol, rightCol, row: Byte);
 
-{ Where a scroll bar's knob goes on a track of track rows, for a list of count entries of which shown are shown at once,
-  the first shown being top (zero-based): first, the knob's first track row from 0, and size, its length in rows. The
-  knob's share of the track is the share of the list shown, rounded to the nearest row, at least one and, while the list
-  is longer than its box, at least one short of the track; it touches the track's top only at the list's start and its
-  bottom only at its end (docs/screen-mocks/scrollbar.txt). The track is apart from the list because the edge bar's
-  arrows take two of its rows and an entry may be several rows. A list that fits fills the track. }
-procedure ScrollThumb(count, shown, track, top: Integer; var first, size: Integer);
-
-{ Draw a scroll bar for ScrollThumb's thumb in column col, from row topRow down rows rows: the thumb '*' in white, the
-  rest of the bar '-' in dark gray (mocks/new-shop.txt). }
+{ Draw a scroll bar for Border.ScrollThumb's thumb in column col, from row topRow down rows rows: the thumb '*' in
+  white, the rest of the bar '-' in dark gray (the shop's, until it moves to the frame's edge bar, #3 step 7). }
 procedure DrawScrollBar(col, topRow: Byte; count, rows, top: Integer);
 
 { Bottom-line menu: query in qCol, then menu with its digits and capital letters (the hotkeys) in hlCol, the current
@@ -209,40 +201,13 @@ begin
   TextRend.DisplayCentered(leftCol, rightCol, row, White, '(more)');
 end;
 
-procedure ScrollThumb(count, shown, track, top: Integer; var first, size: Integer);
-var
-  room: Integer;
-begin
-  if (track < 1) or (count <= shown) then begin
-    first := 0;
-    size := track;
-  end else begin
-    size := Integer((2 * LongInt(track) * shown + count) div (2 * LongInt(count)));
-    if (size >= track) and (track > 1) then
-      size := track - 1;
-    if size < 1 then
-      size := 1;
-    if top < 0 then
-      top := 0;
-    if top > count - shown then
-      top := count - shown;
-    room := track - size;
-    { rounded to the nearest row, but at the top only at the list's start and at the bottom only at its end }
-    first := Integer((LongInt(top) * room + (count - shown) div 2) div (count - shown));
-    if (first = 0) and (top > 0) and (room > 1) then
-      first := 1;
-    if (first = room) and (top < count - shown) and (first > 1) then
-      Dec(first);
-  end;
-end;
-
 procedure DrawScrollBar(col, topRow: Byte; count, rows, top: Integer);
 var
   first: Integer;
   size: Integer;
   r: Integer;
 begin
-  MenuCore.ScrollThumb(count, rows, rows, top, first, size);
+  Border.ScrollThumb(count, rows, rows, top, first, size);
   for r := 0 to rows - 1 do
     if (r >= first) and (r < first + size) then
       TextRend.DisplayString(col, topRow + r, White, '*')

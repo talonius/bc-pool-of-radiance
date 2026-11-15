@@ -61,7 +61,7 @@ def scroll_thumb(count, shown, track, top):
     """The knob's first track row (from 0) and length for a list of count entries, shown at once, on track rows, whose
     first entry shown is top. The knob's share of the track is the share of the list shown, rounded, at least a row
     and, while the list is longer than its box, at least a row short of the track; it touches the track's top only at
-    the list's start and its bottom only at its end (scrollbar.txt). The same as MenuCore.ScrollThumb (TScroll)."""
+    the list's start and its bottom only at its end (scrollbar.txt). The same as Border.ScrollThumb (TScroll)."""
     if track < 1 or count <= shown:
         return 0, track
     size = (2 * track * shown + count) // (2 * count)
