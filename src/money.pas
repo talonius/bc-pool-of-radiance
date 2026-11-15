@@ -53,7 +53,7 @@ procedure AppraiseMenu(var ok: Boolean);
 implementation
 
 uses Crt, C_NPC, GameDefs, GameVars, TextRend, Border, CharHlp, C_KEYS, C_IFC, C_MONEY, GameIo, MenuCore, C_MSG,
-  C_ITEM, EclMenu, CharDisp, AbilAdj, MoneyCal, Dice, StrUtil{$IFDEF FPC}, TpRand{$ENDIF};
+  C_ITEM, EclMenu, CharDisp, AbilAdj, MoneyCal, Dice, StrUtil{$IFDEF FPC}, TpRand{$ENDIF}, UiColor;
 
 { Carrying capacity is the weight allowance plus 1500 coins, and 5000 more with a Bag of Holding readied. It is measured
   against CharHlp.RawWeight, the weight before the bag takes its share. }
@@ -412,7 +412,7 @@ begin
     redraw := True;
     list := Money.CoinMenu(nil);
     sel := list;
-    ch := MenuCore.MenuVertical('Select type of coin', '', LightMagenta, LightGreen, White, 2, 2,
+    ch := MenuCore.MenuVertical('Select type of coin', '', promptColor, optionColor, commandColor, 2, 2,
                                 15, 8, list, True, redraw, idx, sel);
     exitF := (sel = nil) or (ch = C_KEYS.NONE);
     if not exitF then begin
@@ -495,7 +495,7 @@ var
     { the stone is already out of the pool, so only Sell or Keep ends the prompt: Escape or any other key sold it
       (#732) }
     repeat
-      ch := MenuCore.MenuHorizontal('You can: ', actionStr, LightMagenta, LightGreen, White, True, False, ext);
+      ch := MenuCore.MenuHorizontal('You can: ', actionStr, promptColor, optionColor, commandColor, True, False, ext);
     until not ext and ((ch = 'S') or ((ch = 'K') and (holder <> nil)));
     if ch = 'K' then begin
       { a whole item record }
@@ -552,7 +552,7 @@ begin
         if GameVars.curChar^.coins[C_MONEY.JEWELRY] <> 0 then
           menu := menu + 'Jewelry ';
         menu := menu + 'Exit';
-        ch := MenuCore.MenuHorizontal('Appraise: ', menu, LightMagenta, LightGreen, White, True,
+        ch := MenuCore.MenuHorizontal('Appraise: ', menu, promptColor, optionColor, commandColor, True,
                                       False, ext);
         case ch of
           'G': if GameVars.curChar^.coins[C_MONEY.GEMS] <> 0 then begin
@@ -601,7 +601,8 @@ begin
   TextRend.ShowMessage(LightGreen, True, said);
   TextRend.ShowMessage(White, False, ask);
   { 0-based: 1 is No }
-  if EclMenu.MenuHorizontalCharacterSelect('', '~Yes ~No', LightMagenta, LightGreen, White, False, False) = 1 then
+  if EclMenu.MenuHorizontalCharacterSelect('', '~Yes ~No', promptColor, optionColor, commandColor, False,
+                                           False) = 1 then
     GoBackForIt := False
   else begin
     TextRend.ClearRect(C_MSG.TEXT_LEFT, C_MSG.MESSAGE_TOP, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM);

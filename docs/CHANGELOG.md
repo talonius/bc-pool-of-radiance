@@ -56,6 +56,7 @@ This update is a broad one: it adds an easier setup process, smarter inventory h
 
 Most of these changes are small on their own, but together they make the game easier to understand and harder to operate by accident.
 
+- The More Info pages show the character's name in magenta when they are ready to train, as the party list does.
 - Menus mark the highlighted choice in inverse video, black on the highlight colour, as the later Gold Box games do, in place of a change of text colour. That covers every bottom-line menu (the map, camp, shop and Yes/No prompts among them), every list (Items, spells, shop stock, the roster), the training hall's party menu, the Load/Save slots (the slot's letter), the Journal, the Bestiary, the rest timer, the Dual Class and Levels screens, and the Settings screen, where the highlighted setting's chosen value is the one marked. The inverse covers the whole choice, from the start of the word holding its hotkey, so coMbat and sYstem light their words alone (#1197) and a choice of several words lights every one of them: ADVANCE CAUTIOUSLY, and PRESS <ENTER>/<RETURN> TO CONTINUE, which lit only PRESS (#1216).
 - POOLCFG takes Borland's colours, in homage to the Turbo Pascal it was first written in: yellow text on the deep blue, and grey menus with black text and red keys. On Linux and macOS, in a terminal with 24-bit colour, it shows the VGA's own blue and the rest rather than the terminal's palette's.
 - In the Linux, Windows and macOS versions, Command-Q, the app menu's Quit, the window's close button and Alt-F4 now ask "Quit Pool of Radiance? Progress since your last save will be lost." before ending the game, with Quit and Cancel; Return and Escape choose Cancel. On a Mac the game's Alt is Option, so Option-Q is Quick: reaching for Alt-Q no longer loses your game. The macOS README says so.
@@ -96,6 +97,7 @@ Most of these changes are small on their own, but together they make the game ea
 
 The fixes below cover both visible bugs and rare failures that could damage a save, hang combat, or behave differently across platforms.
 
+- At a temple, the "Pay for cure" Yes/No menu is drawn like every other menu: green words with white hotkeys. SSI had the colors the wrong way round.
 - The spell lists of a magic-user who knows Bestow Curse no longer show it under a second "4th Level" heading after the 5th-level spells; every spell list now shows each level once, in order.
 - A Potion of Extra Healing found in random treasure is now named "Potion Extra Healing", as every other one is, instead of "Potion of Extra".
 - A stack of Darts +1 now reads "5 Darts +1" instead of "5 Dart +1s".

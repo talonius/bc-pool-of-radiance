@@ -138,7 +138,8 @@ procedure ShowFault(msg: Types.TStr40);
 implementation
 
 uses CharHlp, Crt, C_AREA, C_MSG, GameDefs, GameVars, MenuCore, MapView, Pathing, CbtMap, C_EQUIP, C_KEYS, C_IFC, Blit,
-  Border, Portrait, SoundDrv, C_SOUND, C_SPELL, TextRend, Wilds, StrUtil, C_GBVM, Party, C_DIR, CbtLog, JrnlSeen;
+  Border, Portrait, SoundDrv, C_SOUND, C_SPELL, TextRend, Wilds, StrUtil, C_GBVM, Party, C_DIR, CbtLog, JrnlSeen,
+  UiColor;
 
 const
   { the full-width combat view's text lines (#1211): the creature's, then the messages' first; the last is
@@ -565,19 +566,19 @@ begin
     Border.ClearBox(C_MSG.COMBAT_LEFT, C_MSG.COMBAT_MESSAGE_TOP, C_MSG.TEXT_RIGHT, C_MSG.COMBAT_BOTTOM);
 end;
 
-{ The colour of the creature's name: light red (out of action, enabled = 0), yellow (hostile), light magenta (ready to
-  train) or light cyan (friendly). }
+{ The colour of the creature's name (UiColor): downColor (out of action, enabled = 0), hostileColor, trainColor (ready
+  to train) or partyColor (friendly). }
 function NameColor(creature: Types.PCharRecord): Byte;
 begin
   if creature^.enabled = 0 then
-    NameColor := LightRed
+    NameColor := downColor
   else if creature^.hostile = 1 then
-    NameColor := Yellow
+    NameColor := hostileColor
   else if CharHlp.CanTrain(creature) then
     { ready to train, as in Pools of Darkness }
-    NameColor := LightMagenta
+    NameColor := trainColor
   else
-    NameColor := LightCyan;
+    NameColor := partyColor;
 end;
 
 procedure LogCreatureName(creature: Types.PCharRecord);
@@ -1035,7 +1036,7 @@ begin
       anim := True
     else
       anim := False;
-    ch := MenuCore.MenuHorizontal(query + ' ', 'Select' + exitStr, LightMagenta, LightGreen, White, True,
+    ch := MenuCore.MenuHorizontal(query + ' ', 'Select' + exitStr, promptColor, optionColor, commandColor, True,
                                   anim, ext);
     p := sel;
     if ext then

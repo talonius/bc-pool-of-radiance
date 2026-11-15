@@ -52,7 +52,7 @@ procedure ChangeClassMenu(freeTraining: Boolean);
 implementation
 
 uses Crt, C_STAT, C_EFFECT, C_KEYS, C_LEVEL, C_MSG, C_RACE, C_STATUS, GameDefs, GameVars, Border,
-  CharDisp, CharHlp, ClassCal, FxEngine, MenuCore, Money, MoneyCal, StrUtil, TextRend;
+  CharDisp, CharHlp, ClassCal, FxEngine, MenuCore, Money, MoneyCal, StrUtil, TextRend, UiColor;
 
 const
   { the screen's columns: the labels and class names, what is needed and what the character has }
@@ -339,10 +339,10 @@ begin
     MenuCore.arrowsToCaller := True;
     if (sel > 0) and ChgClass.Qualifies(creature, listed[sel], freeTraining) then begin
       MenuCore.enterToCaller := True;
-      ch := MenuCore.MenuHorizontal('Change class: ', 'Choose Exit', LightMagenta, LightGreen, White, True, False,
-                                    ext);
+      ch := MenuCore.MenuHorizontal('Change class: ', 'Choose Exit', promptColor, optionColor, commandColor, True,
+                                    False, ext);
     end else
-      ch := MenuCore.MenuHorizontal('Change class: ', 'Exit', LightMagenta, LightGreen, White, True, False, ext);
+      ch := MenuCore.MenuHorizontal('Change class: ', 'Exit', promptColor, optionColor, commandColor, True, False, ext);
     if ext then begin
       if sel > 0 then
         case ch of
@@ -352,8 +352,8 @@ begin
     end else if (sel > 0) and ((ch = 'C') or (ch = C_KEYS.ENTER)) and
         ChgClass.Qualifies(creature, listed[sel], freeTraining) then begin
       cls := listed[sel];
-      if MenuCore.YesNoMenu('Change ' + creature^.name + ' to a ' + GameDefs.classNames[cls] + '? ', LightMagenta,
-                            LightGreen, White) = 'Y' then begin
+      if MenuCore.YesNoMenu('Change ' + creature^.name + ' to a ' + GameDefs.classNames[cls] + '? ', promptColor,
+                            optionColor, commandColor) = 'Y' then begin
         if not freeTraining then
           Money.PayFromCreature(creature, CHANGE_FEE);
         ClassCal.ChangeClass(creature, cls);

@@ -16,7 +16,7 @@ procedure VaultMenu;
 implementation
 
 uses Crt, GameVars, C_IFC, C_KEYS, CharDisp, CharHlp, MenuCore, Money, Party, PostCbt, TextRend, Vault, ViewChar
-  {$IFDEF FPC}, TpRand{$ENDIF};
+  {$IFDEF FPC}, TpRand{$ENDIF}, UiColor;
 
 procedure VaultMenu;
 var
@@ -45,7 +45,7 @@ begin
     if hasMoney then
       menu := menu + ' Share';
     menu := menu + ' Exit';
-    c := MenuCore.MenuHorizontal('', menu, LightMagenta, LightGreen, White, True, False, ext);
+    c := MenuCore.MenuHorizontal('', menu, promptColor, optionColor, commandColor, True, False, ext);
     { an extended key only steps the character, as at the shop's counter (Shop.CounterMenu): the arrows and Home and
       End; SelectPrevNextChar ignores the rest. Alt-n opens member n's items (ViewChar.AltItems, #1195). }
     if ext then begin
@@ -65,7 +65,7 @@ begin
                Money.ShareMoney;
         'E', C_KEYS.NONE:
           done := Vault.WriteVault or
-                  (MenuCore.YesNoMenu('Leave anyway? ', Yellow, LightGreen, White) = 'Y');
+                  (MenuCore.YesNoMenu('Leave anyway? ', warnColor, optionColor, commandColor) = 'Y');
       end;
     CharDisp.DisplayParty(GameVars.curChar);
   until done;

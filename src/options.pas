@@ -44,7 +44,7 @@ procedure OptionsMenu;
 implementation
 
 uses {$IFDEF FPC}TpCompat, {$ENDIF}Crt, Types, C_KEYS, C_SOUND, C_DATA, C_OPT, GameVars, TextRend, Border, MenuCore,
-  GameIo, SoundDrv, DaxIo, DataArc, GameDefs, VidOps, CbtLog, StrUtil, Advisory;
+  GameIo, SoundDrv, DaxIo, DataArc, GameDefs, VidOps, CbtLog, StrUtil, Advisory, UiColor;
 
 { BUILD_VERSION and BUILD_COMMIT: build.sh writes them from git before each build. }
 {$I BUILDID.INC}
@@ -527,8 +527,8 @@ begin
     MenuCore.arrowsToCaller := True;
     MenuCore.enterToCaller := True;
     { no prompt: with Camp the pages fill the bottom line; Combat's key is M, as C is Camp's }
-    ch := MenuCore.MenuHorizontal('', 'Game Sound Camp coMbat sYstem Exit', LightMagenta, LightGreen, White, True,
-                                  False, ext);
+    ch := MenuCore.MenuHorizontal('', 'Game Sound Camp coMbat sYstem Exit', promptColor, optionColor, commandColor,
+                                  True, False, ext);
     if ext then begin
       if page in SETTINGS_PAGES then begin
         Options.Passed(page, skip);

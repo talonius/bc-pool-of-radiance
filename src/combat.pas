@@ -16,7 +16,7 @@ implementation
 
 uses Types, C_TIME, C_COND, GameDefs, GameVars, GameIo, Crt, CombatAi, CombatSt, Magic, C_KEYS,
   C_STATUS, C_IFC, C_GBVM, C_DIR, Options, Stats, Blit, Border, CbtActs, CbtMap, CharHlp, FxEngine, MenuCore, ViewChar,
-  TextRend, StrUtil, CharDisp, Dice, CbtLog, LogView, ClassCal, MapTiles, CbtMini, C_ITEM, WideView;
+  TextRend, StrUtil, CharDisp, Dice, CbtLog, LogView, ClassCal, MapTiles, CbtMini, C_ITEM, WideView, UiColor;
 
 const
   { CombatMenu's answer for F7, the combat log (#841): F7's scan code is the character code of 'A', which is Aim }
@@ -335,7 +335,7 @@ begin
   repeat
     if sets then
       MenuCore.extraKeys := '12';
-    ch := MenuCore.MenuHorizontal('', menu, LightMagenta, LightGreen, White, True, False, ext);
+    ch := MenuCore.MenuHorizontal('', menu, promptColor, optionColor, commandColor, True, False, ext);
     if ext then begin
       if (ch = C_KEYS.F7) and CbtLog.Active then
         ch := SHOW_LOG
@@ -386,7 +386,7 @@ begin
   done := CharHlp.SideEmpty;
   { SSI's had a flag to skip the question, which nothing ever set }
   if (GameVars.teamCount[0] > 0) and (GameVars.teamCount[1] = 0) and not GameVars.demoMode then
-    if MenuCore.YesNoMenu('Continue Battle:', LightMagenta, LightGreen, White) = 'Y' then
+    if MenuCore.YesNoMenu('Continue Battle:', promptColor, optionColor, commandColor) = 'Y' then
       done := False;
 end;
 
@@ -452,7 +452,7 @@ begin
           startY := CbtMap.CombatCellY(creature);
         end;
       end else if terrIdx = 0 then begin
-        case MenuCore.YesNoMenu('Flee:', LightMagenta, LightGreen, White) of
+        case MenuCore.YesNoMenu('Flee:', promptColor, optionColor, commandColor) of
           'Y': done := CbtActs.AttemptFlee(creature);
           'N': done := False;
         end;
@@ -503,7 +503,7 @@ begin
   ch := ' ';
   while not (ch in [C_KEYS.NONE, 'E']) and not done do
   begin
-    ch := MenuCore.MenuHorizontal('', menu, LightMagenta, LightGreen, White, False, False,
+    ch := MenuCore.MenuHorizontal('', menu, promptColor, optionColor, commandColor, False, False,
                                   CbtActs.doneRoundFlag);
     case ch of
       'G': begin
@@ -569,7 +569,7 @@ begin
     if GameVars.gameDelay > 0 then
       menu := menu + 'Faster ';
     menu := menu + 'Exit';
-    ch := MenuCore.MenuHorizontal(query, menu, LightMagenta, LightGreen, White, False, False,
+    ch := MenuCore.MenuHorizontal(query, menu, promptColor, optionColor, commandColor, False, False,
                                   CbtActs.doneRoundFlag);
     case ch of
       'S': Inc(GameVars.gameDelay);

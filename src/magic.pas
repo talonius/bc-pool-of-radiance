@@ -392,7 +392,8 @@ implementation
 
 uses Stats, CharDisp, C_SOUND, C_ITEM, Dice, Crt, C_NPC, C_TERR, C_SAVE, C_COND, GameDefs, GameVars, TextRend, Border,
   CharHlp, SoundDrv, MenuCore, Pathing, CbtMap, ClassCal, FxEngine, C_EFFECT, C_KEYS, C_LEVEL, C_STATUS, C_IFC, C_DIR,
-  C_SPELL, AbilAdj, StrUtil, ChgClass, SpellInf, CbtLog, C_SPRITE, Bestiary, C_BEAST, CharExt, C_RACE, EffHndlr;
+  C_SPELL, AbilAdj, StrUtil, ChgClass, SpellInf, CbtLog, C_SPRITE, Bestiary, C_BEAST, CharExt, C_RACE, EffHndlr,
+  UiColor;
 
 var
   { the menu string list }
@@ -612,7 +613,7 @@ begin
     MenuCore.listOnly := selType = 5;
     MenuCore.movesToCaller := summaryRow > 0;
     MenuCore.fullPaging := True;
-    ch := MenuCore.MenuVertical(prompt, title, LightMagenta, LightGreen, White, 1, C_SPELL.LIST_TOP, 38,
+    ch := MenuCore.MenuVertical(prompt, title, promptColor, optionColor, commandColor, 1, C_SPELL.LIST_TOP, 38,
                                 bottomRow, spellList, addExit, redraw, idx, sel);
     moved := MenuCore.moved;
     if not moved and (ch = 'I') and (summaryRow > 0) and (sel <> nil) then begin
@@ -1203,7 +1204,7 @@ begin
     end else begin
       if GameVars.ifcState <> C_IFC.IN_COMBAT then
         ok := False
-      else if b or (MenuCore.YesNoMenu('Abort Spell? ', Yellow, LightGreen, White) = 'Y') then
+      else if b or (MenuCore.YesNoMenu('Abort Spell? ', warnColor, optionColor, commandColor) = 'Y') then
       begin
         CharDisp.PrintActionLine(GameVars.curChar, 'Spell Aborted', 'aborts the spell');
         if GameVars.usingItem = False then
@@ -2677,7 +2678,8 @@ begin
       else
         ch := 'C';
     end else
-      ch := MenuCore.MenuHorizontal('flame type: ', 'Hot Cold', LightMagenta, LightGreen, White, False, False, ext);
+      ch := MenuCore.MenuHorizontal('flame type: ', 'Hot Cold', promptColor, optionColor, commandColor, False, False,
+                                    ext);
     if (ch = 'H') or (ch = 'C') then begin
       if ch = 'H' then begin
         own := C_EFFECT.FIRE_SHIELD_HOT;
@@ -2693,7 +2695,7 @@ begin
       FxEngine.AddEffectWithMessage(GameVars.curChar, own, minutes, lvl, False, False, False, 'is protected');
       FxEngine.AddEffectWithMessage(GameVars.curChar, C_EFFECT.FIRE_SHIELD_ZAP, minutes, lvl, False, False, False, '');
       done := True;
-    end else if MenuCore.YesNoMenu('Abort spell? ', LightMagenta, LightGreen, White) = 'Y' then
+    end else if MenuCore.YesNoMenu('Abort spell? ', promptColor, optionColor, commandColor) = 'Y' then
       done := True;
   until done;
 end;

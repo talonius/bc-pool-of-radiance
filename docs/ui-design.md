@@ -121,19 +121,25 @@ CURR) is the next place to try it.
 
 ### In code
 
-Colors are **global variables, one per role**, in one unit (say `UiColor`, used qualified as the sources do:
-`UiColor.headerColor`) and set to the defaults above at start-up, instead of each call passing `LightGreen` or
-`White`:
+Colors are **global variables, one per role**, in the unit `UiColor` (`src/uicolor.pas`), set to the defaults above
+at start-up (`UiColor.SetDefaults`), instead of each call passing `LightGreen` or `White`. They are used unqualified, as
+Crt's colors are (`promptColor`, not `UiColor.promptColor`), so that a call is no longer than the one it replaces:
 
     keyColor, valueColor, commandColor, optionColor, promptColor, headerColor, titleColor,
-    partyColor, trainColor, downColor, hostileColor, warnColor, badColor, betterColor, unavailableColor
+    partyColor, trainColor, downColor, hostileColor, warnColor, badColor, betterColor, betterBack, unavailableColor
 
-The name colors are `partyColor`, `trainColor`, `downColor` and `hostileColor`, not `nameColor`: Pascal ignores case,
-so a `nameColor` would clash with `CharDisp.NameColor`, the function that picks among them. A variable, not a
-constant, so a color can be changed while the game runs: to try title colors without rebuilding, and later from a
-setting if colors become a choice. A screen that disagrees with the rest shows up in a search. Screens move to the
-roles as they are touched; the bottom line's three (`MenuHorizontal`'s qCol, mCol and hlCol, passed at 33 call sites
-as LightMagenta, LightGreen, White) are the first.
+Being unqualified, a role's name must not shadow anything the sources use: the procedure that sets the defaults is
+`SetDefaults`, since a `Reset` hid the system's `Reset` (open a file) in every unit using `UiColor`. For the same
+reason the name colors are `partyColor`, `trainColor`, `downColor` and `hostileColor`, not `nameColor`: Pascal ignores
+case, so a `nameColor` would clash with `CharDisp.NameColor`, the function that picks among them.
+
+A variable, not a constant, so a color can be changed while the game runs: to try title colors without rebuilding, and
+later from a setting if colors become a choice. A screen that disagrees with the rest shows up in a search.
+
+Screens move to the roles as they are touched. Done: the bottom line (every menu call that passed LightMagenta,
+LightGreen, White now passes `promptColor, optionColor, commandColor`; a confirmation's yellow prompt is `warnColor`)
+and the names (`CharDisp.NameColor`). Temple's `pay for cure` menu had its option and key colors swapped in SSI's
+code (POR-0231) and now uses the roles too. Still literal: the all-white Continue prompts.
 
 
 ## Keys

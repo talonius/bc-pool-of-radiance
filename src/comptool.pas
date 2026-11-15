@@ -15,7 +15,7 @@ procedure ToolsMenu;
 implementation
 
 uses Crt, Types, C_AREA, C_DIR, C_KEYS, C_MSG, GameDefs, GameVars, TextRend, Border, MenuCore, Blit, View3D, AreaName,
-  Explored, EvtKind, CharEdit, MapNotes, ClueBook, StrUtil;
+  Explored, EvtKind, CharEdit, MapNotes, ClueBook, StrUtil, UiColor;
 
 const
   { the map's top-left character cell; a square is one 8x8 symbol }
@@ -254,7 +254,8 @@ begin
       TextRend.DisplayString(NOTE_COL, KEY_ROW, LightCyan, ClueBook.Note(map, cx, cy));
     TextRend.DisplayString(NOTE_COL, PLAYER_ROW, NoteColour, MapNotes.Note(script, map, cx, cy));
     MenuCore.arrowsToCaller := True;
-    ch := MenuCore.MenuHorizontal('Map: ', 'Write Clear Exit', LightMagenta, LightGreen, White, True, False, ext);
+    ch := MenuCore.MenuHorizontal('Map: ', 'Write Clear Exit', promptColor, optionColor, commandColor, True, False,
+                                  ext);
     nx := cx;
     ny := cy;
     if ext then
@@ -292,7 +293,7 @@ begin
   if GameVars.companionOn = 0 then Exit;
   DrawTools;
   repeat
-    ch := MenuCore.MenuHorizontal('Tools: ', 'Map Character Exit', LightMagenta, LightGreen, White, False, False,
+    ch := MenuCore.MenuHorizontal('Tools: ', 'Map Character Exit', promptColor, optionColor, commandColor, False, False,
                                   ext);
     case ch of
       'M': MapTool;

@@ -111,7 +111,7 @@ procedure ShowPage(lines: PKeyLines; count: Byte);
 
 implementation
 
-uses {$IFDEF FPC}TpCompat, {$ENDIF}Crt, C_KEYS, C_SOUND, GameVars, TextRend, Border, MenuCore;
+uses {$IFDEF FPC}TpCompat, {$ENDIF}Crt, C_KEYS, C_SOUND, GameVars, TextRend, Border, MenuCore, UiColor;
 
 const
   { The window's frame and rows, as the Quests page's (#855): the title box on TITLE_ROW, the lines' box from LIST_TOP
@@ -208,7 +208,7 @@ begin
   repeat
     { F1 here is this window already }
     MenuCore.helpToCaller := True;
-    ch := MenuCore.MenuHorizontal('Help: ', 'Exit', LightMagenta, LightGreen, White, False, False, ext);
+    ch := MenuCore.MenuHorizontal('Help: ', 'Exit', promptColor, optionColor, commandColor, False, False, ext);
   until not ext and (ch in [C_KEYS.NONE, 'E']);
   TextRend.ClearBottomLine;
   GameVars.horizChoice := savedChoice;

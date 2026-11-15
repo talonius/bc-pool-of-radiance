@@ -48,7 +48,7 @@ implementation
 uses Types, Crt, C_AREA, GameDefs, GameVars, SaveLoad, ViewChar, Border, C_CLASS, C_LEVEL, C_RACE, C_SPELL,
   C_KEYS, C_EFFECT, C_STATUS, C_IFC, C_GBVM, C_STAT, C_MONEY, Money, C_ALIGN, Options, Blit, CbtMap, CharHlp, ClassCal,
   DaxIo, FxEngine, MapTiles, MenuCore, Portrait, TextRend, StrUtil, CharDisp, MoneyCal, Party, Magic, C_MSG, Dice,
-  VidOps, ChgClass, PartyMnu, CharExt, C_DEMO, Demo{$IFDEF FPC}, TpRand{$ENDIF};
+  VidOps, ChgClass, PartyMnu, CharExt, C_DEMO, Demo{$IFDEF FPC}, TpRand{$ENDIF}, UiColor;
 
 const
   { Racial ability adjustments, by race and ability, added to each 3d6 roll before the racial limits apply. }
@@ -439,8 +439,8 @@ var
     withExit := True;
     repaint := True;
     repeat
-      key := MenuCore.MenuVertical('', '', LightMagenta, LightGreen, White, 1, 2, 38, 22, list, withExit, repaint, sel,
-                                   picked);
+      key := MenuCore.MenuVertical('', '', promptColor, optionColor, commandColor, 1, 2, 38, 22, list, withExit,
+                                   repaint, sel, picked);
       if key = C_KEYS.NONE then begin
         MenuCore.FreeStringList(list);
         SaveLoad.FreeCreature(creature);
@@ -495,7 +495,7 @@ begin
   addExit := True;
   repeat
     MenuCore.movesToCaller := True;
-    ch := MenuCore.MenuVertical('', '', LightMagenta, LightGreen, White, 1, RACE_LIST_ROW, RACE_SPLIT_COL - 1,
+    ch := MenuCore.MenuVertical('', '', promptColor, optionColor, commandColor, 1, RACE_LIST_ROW, RACE_SPLIT_COL - 1,
                                 RACE_LIST_ROW + 5, list, addExit, redraw, sel, m);
     if ch = C_KEYS.NONE then begin
       MenuCore.FreeStringList(list);
@@ -726,7 +726,7 @@ begin
     end;
     ViewChar.PrintCombatStats;
     ViewChar.PrintMoney;
-    ch := MenuCore.YesNoMenu('Keep this character? ', LightMagenta, LightGreen, White);
+    ch := MenuCore.YesNoMenu('Keep this character? ', promptColor, optionColor, commandColor);
   until ch = 'Y';
   ViewChar.DisplayChar(GameVars.curChar);
   GameVars.curChar := savedCur;
@@ -740,7 +740,7 @@ begin
   ViewChar.DisplayChar(GameVars.curChar);
   CharGen.CustomizeIcon;
   while not SaveLoad.SaveChar(Types.PCharRecord(creature), '') and
-        (MenuCore.YesNoMenu('Try again? ', Yellow, LightGreen, White) = 'Y') do
+        (MenuCore.YesNoMenu('Try again? ', warnColor, optionColor, commandColor) = 'Y') do
     ;
   GameVars.curChar := savedCur;
   { with its racial effects }
@@ -755,8 +755,8 @@ procedure DropCharacterMenu;
 begin
   if GameVars.curChar = nil then Exit;
   with GameVars.curChar^ do begin
-    if (MenuCore.YesNoMenu('Drop ' + name + ' forever? ', Yellow, LightGreen, White) = 'Y') and
-        (MenuCore.YesNoMenu('Are you sure? ', Yellow, LightGreen, White) = 'Y') then
+    if (MenuCore.YesNoMenu('Drop ' + name + ' forever? ', warnColor, optionColor, commandColor) = 'Y') and
+        (MenuCore.YesNoMenu('Are you sure? ', warnColor, optionColor, commandColor) = 'Y') then
     begin
       if enabled = 0 then
         CharDisp.PrintBottomLine('You dump ' + name + ' out back.')
@@ -910,8 +910,8 @@ begin
   with GameVars.curChar^ do begin
     repeat
       MenuCore.arrowsToCaller := True;
-      key := MenuCore.MenuHorizontal('Modify character: ', 'Keep Exit', LightMagenta, LightGreen,
-                                     White, True, False, ext);
+      key := MenuCore.MenuHorizontal('Modify character: ', 'Keep Exit', promptColor, optionColor,
+                                     commandColor, True, False, ext);
       RedrawStat(False);
       oldCon := stats[C_STAT.CONSTITUTION];
       if ext then
@@ -1208,7 +1208,7 @@ begin
                                    'and a level ' + StrUtil.NumStr(classLevels[cls] + 1) + ' ' +
                                      GameDefs.classNames[cls]);
         end;
-    if MenuCore.YesNoMenu('Do you wish to train? ', LightMagenta, LightGreen, White) <> 'Y' then
+    if MenuCore.YesNoMenu('Do you wish to train? ', promptColor, optionColor, commandColor) <> 'Y' then
       Exit;
     CharDisp.PrintBottomLine('Congratulations...');
     if stingMode = 0 then
@@ -1265,7 +1265,7 @@ begin
   nonNpc := 0;
   repeat
     { the menu string already holds Exit, so MenuVertical adds none }
-    key := MenuCore.MenuVertical('Add a character: ', 'Add Exit', LightMagenta, LightGreen, White,
+    key := MenuCore.MenuVertical('Add a character: ', 'Add Exit', promptColor, optionColor, commandColor,
                                  1, 2, 38, 22, list, False, redraw, idx, m);
     if (key = C_KEYS.ENTER) or (key = 'A') then
       if m^.name[1] <> '*' then
@@ -1457,7 +1457,7 @@ begin
     repeat
       ShowCounts;
       MenuCore.arrowsToCaller := True;
-      key := MenuCore.MenuHorizontal('Portrait: ', 'Head Body Next Prev Keep', LightMagenta, LightGreen, White,
+      key := MenuCore.MenuHorizontal('Portrait: ', 'Head Body Next Prev Keep', promptColor, optionColor, commandColor,
                                      True, False, ext);
       { an extended key's scan code can equal a letter (Down is 80, 'P'), so the two are told apart by ext }
       step := 0;
@@ -1484,7 +1484,7 @@ begin
               Border.ClearBox(PIC_COL[0], PIC_ROW, PIC_COL[0] + 10, PIC_ROW + 10);
               Border.ClearBox(PIC_COL[2], PIC_ROW, PIC_COL[2] + 10, PIC_ROW + 10);
               Border.ClearBox(2, 17, 37, HINT_ROW);
-              if MenuCore.YesNoMenu('Is this portrait ok? ', LightMagenta, LightGreen, White) = 'Y' then
+              if MenuCore.YesNoMenu('Is this portrait ok? ', promptColor, optionColor, commandColor) = 'Y' then
                 done := True
               else begin
                 ShowRow(False);
@@ -1977,7 +1977,7 @@ var
     finished := False;
     repeat
       MenuCore.arrowsToCaller := True;
-      key := MenuCore.MenuHorizontal('', '', LightMagenta, LightGreen, White, True, False, ext);
+      key := MenuCore.MenuHorizontal('', '', promptColor, optionColor, commandColor, True, False, ext);
       if ext then begin
         if key in [C_KEYS.UP, C_KEYS.DOWN, C_KEYS.LEFT, C_KEYS.RIGHT] then begin
           old := pick;
@@ -2029,7 +2029,7 @@ var
     editing }
   function Confirmed: Boolean;
   begin
-    if MenuCore.YesNoMenu('Is this icon ok? ', LightMagenta, LightGreen, White) = 'Y' then
+    if MenuCore.YesNoMenu('Is this icon ok? ', promptColor, optionColor, commandColor) = 'Y' then
       Confirmed := True
     else begin
       GameVars.horizChoice := 1;
@@ -2081,7 +2081,7 @@ begin
       the option there }
     MenuCore.arrowsToCaller := cur <> ITEM_MENU;
     MenuCore.enterToCaller := cur <> ITEM_MENU;
-    key := MenuCore.MenuHorizontal('', 'Keep Exit', LightMagenta, LightGreen, White, True, False, ext);
+    key := MenuCore.MenuHorizontal('', 'Keep Exit', promptColor, optionColor, commandColor, True, False, ext);
     if ext then begin
       if key in [C_KEYS.UP, C_KEYS.DOWN] then begin
         i := cur;

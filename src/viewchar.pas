@@ -64,7 +64,7 @@ implementation
 
 uses Crt, GameDefs, GameVars, DaxIo, TextRend, Border, CharHlp, MenuCore, Portrait, CbtMap, Money, Magic, FxEngine,
   C_EFFECT, C_EQUIP, C_KEYS, C_LEVEL, C_STATUS, C_IFC, C_STAT, C_MONEY, C_SAVE, Vault, Stats, StrUtil, CharDisp,
-  MoneyCal, C_MSG, ClassCal, C_ITEM, C_SPELL, SpellInf, Party, KeyHelp;
+  MoneyCal, C_MSG, ClassCal, C_ITEM, C_SPELL, SpellInf, Party, KeyHelp, UiColor;
 
 const
   { the character sheet's right column: Exp on the Level line, and Encumbrance under it (PrintCombatStats) }
@@ -344,7 +344,7 @@ begin
   ch := 'Y';
   if not FxEngine.HasDisease(tgt) then begin
     CharDisp.PrintNameString(tgt, 'is not diseased', 0, False);
-    ch := MenuCore.YesNoMenu('cure anyway: ', LightMagenta, LightGreen, White);
+    ch := MenuCore.YesNoMenu('cure anyway: ', promptColor, optionColor, commandColor);
     CharDisp.ClearMessageWindow;
   end;
   if ch <> 'Y' then
@@ -370,11 +370,12 @@ const
   PAGE_THIEF = 4;
   PAGE_CLERIC = 5;
 
-{ Clear the screen, draw the border and centre creature's name in light cyan on row 2: the top of a More Info page. }
+{ Clear the screen, draw the border and centre creature's name on row 2, in its color (CharDisp.NameColor): the top of
+  a More Info page. }
 procedure MoreHeading(creature: Types.PCharRecord);
 begin
   Border.ClearToFrame;
-  TextRend.DisplayCentered(C_MSG.TEXT_LEFT + 1, C_MSG.TEXT_RIGHT - 1, 2, LightCyan, creature^.name);
+  TextRend.DisplayCentered(C_MSG.TEXT_LEFT + 1, C_MSG.TEXT_RIGHT - 1, 2, CharDisp.NameColor(creature), creature^.name);
 end;
 
 { A More Info page's top (MoreHeading) with title centred in white on row 4, under the name and a blank line. }
@@ -637,7 +638,7 @@ begin
     else
       ViewChar.DrawSaves(p);
     end;
-    ch := MenuCore.MenuHorizontal('Info: ', menu, LightMagenta, LightGreen, White, True, False, ext);
+    ch := MenuCore.MenuHorizontal('Info: ', menu, promptColor, optionColor, commandColor, True, False, ext);
     if ext then begin
       if page = PAGE_KILLS then
         case ch of
@@ -802,7 +803,7 @@ begin
     MenuCore.extraKeys := 'M';
     { Alt-n opens member n's items, outside combat (AltItems) }
     MenuCore.memberKeysToCaller := GameVars.ifcState <> C_IFC.IN_COMBAT;
-    ch := MenuCore.MenuHorizontal('', s, LightMagenta, LightGreen, White, False, False, ext);
+    ch := MenuCore.MenuHorizontal('', s, promptColor, optionColor, commandColor, False, False, ext);
     idx := -1;
     if ext then begin
       { the sheet shows the member whose items were opened, as after Items }
@@ -854,7 +855,7 @@ begin
     GameVars.curCol := Length(GameVars.curChar^.name) + 2;
     GameVars.curRow := 21;
     ViewChar.SayBelow(False, ' was going to scribe from that scroll');
-    if MenuCore.YesNoMenu('is it Okay to lose it? ', LightMagenta, LightGreen, White) = 'Y' then
+    if MenuCore.YesNoMenu('is it Okay to lose it? ', promptColor, optionColor, commandColor) = 'Y' then
       CheckItemAvail := True;
   end else
     CheckItemAvail := True;
@@ -1061,7 +1062,7 @@ begin
     MenuCore.memberKeysToCaller := GameVars.ifcState <> C_IFC.IN_COMBAT;
     { F1: the screen's keys, the weapon sets' among them (KeyHelp.ITEM_KEYS) }
     MenuCore.helpToCaller := True;
-    ch := MenuCore.MenuVertical('', s, LightMagenta, LightGreen, White, 1, 5, 38, 22,
+    ch := MenuCore.MenuVertical('', s, promptColor, optionColor, commandColor, 1, 5, 38, 22,
                                 creature^.itemsAddr, True, vmRedraw, idx, sel);
     if MenuCore.moved then
       { Page Up's scan code is 'I': a move is no choice }
@@ -1130,7 +1131,7 @@ begin
                { the item label ends in a space }
                CharHlp.ItemLabel(sel, False);
                ViewChar.SayBelow(True, 'Your ' + sel^.name + 'will be gone forever');
-               if MenuCore.YesNoMenu('Drop It? ', LightMagenta, LightGreen, White) = 'Y' then
+               if MenuCore.YesNoMenu('Drop It? ', promptColor, optionColor, commandColor) = 'Y' then
                begin
                  CharHlp.RemoveItem(GameVars.curChar, sel);
                  vmRedraw := True;
@@ -1254,7 +1255,7 @@ begin
   price := MoneyCal.ItemSalePrice(item);
   CharHlp.ItemLabel(item, False);
   ViewChar.SayBelow(True, 'I''ll give you ' + StrUtil.NumStr(price) + ' gold pieces for your ' + item^.name);
-  if MenuCore.YesNoMenu('Is It a Deal? ', LightMagenta, LightGreen, White) = 'Y' then
+  if MenuCore.YesNoMenu('Is It a Deal? ', promptColor, optionColor, commandColor) = 'Y' then
   begin
     CharDisp.PrintBottomLine('Sold!');
     CharHlp.RemoveItem(GameVars.curChar, item);
@@ -1273,7 +1274,7 @@ begin
   paid := False;
   CharHlp.ItemLabel(item, False);
   ViewChar.SayBelow(True, 'For 200 gold pieces I''ll identify your ' + item^.name);
-  if MenuCore.YesNoMenu('Is It a Deal? ', LightMagenta, LightGreen, White) = 'Y' then
+  if MenuCore.YesNoMenu('Is It a Deal? ', promptColor, optionColor, commandColor) = 'Y' then
   begin
     paid := Money.PayGold(GameVars.curChar, 200);
   end;
@@ -1306,7 +1307,7 @@ begin
   prev := nil;
   idx := 0;
   redraw := True;
-  ch := MenuCore.MenuVertical('Select type of coin', '', LightMagenta, LightGreen, White, 12, 7, 25, 13, p, True,
+  ch := MenuCore.MenuVertical('Select type of coin', '', promptColor, optionColor, commandColor, 12, 7, 25, 13, p, True,
                               redraw, idx, prev);
   PickCoinType := prev;
 end;

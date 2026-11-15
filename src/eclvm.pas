@@ -26,7 +26,7 @@ uses Types, C_AREA, C_NPC, C_MSG, GameDefs, GameVars, Crt, Temple, PostCbt, Comb
   DaxIo, GameIo, C_ECL, C_LEVEL, C_IFC, C_GBVM, C_SOUND, C_MONEY, C_STATUS, C_TIME, VaultMnu, EclTrace, Border,
   Camp, EclMenu, FxEngine, MapTiles, MapView, MenuCore, RandItem, Portrait, SaveLoad, Shop, SoundDrv, TextRend, View3D,
   StrUtil, EclVars, CharDisp, Party, Dice, DiskRec, MoneyCal, Bestiary, Sage, MagicShp, EffHndlr,
-  JrnlSeen, C_DEMO, Wilds{$IFDEF FPC}, TpRand{$ENDIF};
+  JrnlSeen, C_DEMO, Wilds{$IFDEF FPC}, TpRand{$ENDIF}, UiColor;
 
 var
   { stop the VM and return control to the player }
@@ -691,7 +691,7 @@ begin
   repeat
     list := head;
     redraw := True;
-    key := MenuCore.MenuVertical(q, q, LightMagenta, LightGreen, White, C_MSG.TEXT_LEFT, GameVars.curRow + 1,
+    key := MenuCore.MenuVertical(q, q, promptColor, optionColor, commandColor, C_MSG.TEXT_LEFT, GameVars.curRow + 1,
                           C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM, list, False, redraw, idx, list);
   until (list <> nil) or (head = nil);
   EclVars.WriteGbvm(address, idx);
@@ -1238,7 +1238,7 @@ begin
       menu := '~COMBAT ~WAIT ~FLEE ~PARLAY'
     else
       menu := '~COMBAT ~WAIT ~FLEE ~ADVANCE';
-    sel := EclMenu.MenuHorizontalCharacterSelect(q, menu, LightMagenta, LightGreen, White, False, anim);
+    sel := EclMenu.MenuHorizontalCharacterSelect(q, menu, promptColor, optionColor, commandColor, False, anim);
     if ((GameVars.zone1^[C_GBVM.MONSTER_DIST] = 0) or (GameVars.zone0^.view3dFlag = 0)) and (sel = 3) then
       sel := 4;
     choice := resp[sel];
@@ -1306,8 +1306,8 @@ begin
   space := ' ';
   for i := 0 to 4 do
     v[i] := EclVars.GetEclVar(i + 1);
-  sel := EclMenu.MenuHorizontalCharacterSelect(space, '~HAUGHTY ~SLY ~NICE ~MEEK ~ABUSIVE', LightMagenta, LightGreen,
-                                  White, False, False);
+  sel := EclMenu.MenuHorizontalCharacterSelect(space, '~HAUGHTY ~SLY ~NICE ~MEEK ~ABUSIVE', promptColor, optionColor,
+                                  commandColor, False, False);
   address := EclVars.CombineBytesToWord(GameVars.varLo[6], GameVars.varHi[6]);
   v5 := v[sel];
   EclVars.WriteGbvm(address, v5);

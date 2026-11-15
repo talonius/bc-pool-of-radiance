@@ -23,7 +23,8 @@ procedure ShowEntry(var b: Bestiary.TBeast);
 
 implementation
 
-uses {$IFDEF FPC}TpCompat, {$ENDIF}Crt, C_KEYS, C_MSG, C_BEAST, GameVars, BeastFil, TextRend, Border, MenuCore, StrUtil;
+uses {$IFDEF FPC}TpCompat, {$ENDIF}Crt, C_KEYS, C_MSG, C_BEAST, GameVars, BeastFil, TextRend, Border, MenuCore, StrUtil,
+  UiColor;
 
 const
   { the list page: two columns of up to LIST_ROWS names from LIST_TOP, the count on COUNT_ROW }
@@ -249,8 +250,8 @@ begin
   repeat
     b := At(order, sel);
     DrawEntry(b^);
-    ch := MenuCore.MenuHorizontal(b^.name + ': ', 'Next Prev Exit', LightMagenta, LightGreen, White, False, False,
-                                  ext);
+    ch := MenuCore.MenuHorizontal(b^.name + ': ', 'Next Prev Exit', promptColor, optionColor, commandColor, False,
+                                  False, ext);
     case ch of
       'N': if sel < n then Inc(sel) else sel := 1;
       'P': if sel > 1 then Dec(sel) else sel := n;
@@ -266,7 +267,7 @@ begin
   GameVars.horizChoice := 1;
   DrawEntry(b);
   repeat
-    ch := MenuCore.MenuHorizontal(b.name + ': ', 'Exit', LightMagenta, LightGreen, White, False, False, ext);
+    ch := MenuCore.MenuHorizontal(b.name + ': ', 'Exit', promptColor, optionColor, commandColor, False, False, ext);
   until ch in [C_KEYS.NONE, 'E'];
 end;
 
@@ -298,11 +299,12 @@ begin
     MenuCore.arrowsToCaller := True;
     MenuCore.enterToCaller := True;
     if n = 0 then
-      ch := MenuCore.MenuHorizontal(prompt, 'Exit', LightMagenta, LightGreen, White, True, False, ext)
+      ch := MenuCore.MenuHorizontal(prompt, 'Exit', promptColor, optionColor, commandColor, True, False, ext)
     else if pick then
-      ch := MenuCore.MenuHorizontal(prompt, 'Ask Next Prev Exit', LightMagenta, LightGreen, White, True, False, ext)
+      ch := MenuCore.MenuHorizontal(prompt, 'Ask Next Prev Exit', promptColor, optionColor, commandColor, True, False,
+                                    ext)
     else
-      ch := MenuCore.MenuHorizontal(prompt, 'View Next Prev Exit', LightMagenta, LightGreen, White, True, False,
+      ch := MenuCore.MenuHorizontal(prompt, 'View Next Prev Exit', promptColor, optionColor, commandColor, True, False,
                                     ext);
     { an extended key's scan code can be a letter's (Down is 'P'): the commands are in cmd }
     cmd := ch;

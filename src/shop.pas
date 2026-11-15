@@ -24,7 +24,7 @@ procedure BuyItem(item: Types.PItemRec);
 implementation
 
 uses Crt, C_MSG, C_SPELL, GameDefs, GameVars, EclMenu, ViewChar, Money, C_IFC, CharHlp, MenuCore, TextRend, CharDisp,
-  MoneyCal, Party, Magic, ShopBuy;
+  MoneyCal, Party, Magic, ShopBuy, UiColor;
 
 { Give the current character a copy of item (CharHlp.AddToInventory, which joins it to a stack it matches while Auto
   Join is on) and recalculate its stats. When the character cannot carry it, print that it is overloaded and set
@@ -95,7 +95,7 @@ begin
                                    Magic.SpellLine(GameVars.curChar, id, Magic.MARK_NOT_KNOWN));
         end;
       end;
-      WantsItem := MenuCore.YesNoMenu('Buy it? ', LightMagenta, LightGreen, White) = 'Y';
+      WantsItem := MenuCore.YesNoMenu('Buy it? ', promptColor, optionColor, commandColor) = 'Y';
     end;
   end;
 end;
@@ -158,7 +158,7 @@ begin
       menu := first + ' View Take Pool Share Appraise Exit'
     else
       menu := first + ' View Pool Appraise Exit';
-    c := MenuCore.MenuHorizontal('', menu, LightMagenta, LightGreen, White, True, False, ext);
+    c := MenuCore.MenuHorizontal('', menu, promptColor, optionColor, commandColor, True, False, ext);
     { an extended key only steps the character: its scan code is no command letter (H is the up arrow, P the down
       arrow, Delete S, which shared the pool, F7 A, #731) }
     if ext then begin

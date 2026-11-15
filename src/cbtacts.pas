@@ -196,7 +196,7 @@ implementation
 uses C_ITEM, C_TERR, C_COND, GameDefs, GameVars, Crt, MenuCore, Magic, C_EFFECT, C_EQUIP, C_KEYS, C_LEVEL,
   C_STATUS, C_GBVM, C_DIR, C_SOUND, C_SPELL, C_SPRITE, Border, CbtMap, CharHlp, FxEngine, Pathing, SoundDrv, TextRend,
   StrUtil, CharDisp, AbilAdj, Dice, Blit, ClassCal, Bestiary, CbtLog, C_BEAST, Party, ViewChar, C_MSG,
-  CbtMini;
+  CbtMini, UiColor;
 
 type
   { A spell's rule for the spell-aim count (#840): how it tells who the spell cannot affect, whatever the dice }
@@ -1966,7 +1966,7 @@ var
 begin
   if (CharHlp.EnemyTeam(def) = CharHlp.Team(att)) or (att^.quickfight <> 0) then
     CheckAttackAlly := True
-  else if MenuCore.YesNoMenu('Attack Ally: ', LightMagenta, LightGreen, White) <> 'Y' then
+  else if MenuCore.YesNoMenu('Attack Ally: ', promptColor, optionColor, commandColor) <> 'Y' then
     CheckAttackAlly := False
   else begin
     CheckAttackAlly := True;
@@ -2045,7 +2045,7 @@ begin
   CbtMini.Show(cur, CbtMap.CombatCellX(tgt), CbtMap.CombatCellY(tgt));
   repeat
     MenuCore.arrowsToCaller := True;
-    ch := MenuCore.MenuHorizontal('Aim: ', menu, LightMagenta, LightGreen, White, True, False, ext);
+    ch := MenuCore.MenuHorizontal('Aim: ', menu, promptColor, optionColor, commandColor, True, False, ext);
     dir := C_DIR.CENTER;
     if ext then
       dir := CbtActs.DirOfKey(ch);
@@ -2178,7 +2178,7 @@ begin
     if valid then
       menu := 'Target ' + menu;
     MenuCore.arrowsToCaller := True;
-    ch := MenuCore.MenuHorizontal('(Use Cursor keys) ', menu, LightMagenta, LightGreen, White, True, False,
+    ch := MenuCore.MenuHorizontal('(Use Cursor keys) ', menu, promptColor, optionColor, commandColor, True, False,
                                   doneRoundFlag);
     case ch of
       'T':

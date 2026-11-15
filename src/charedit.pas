@@ -15,7 +15,7 @@ procedure EditMenu;
 implementation
 
 uses Crt, Types, C_STAT, C_ITEM, C_KEYS, C_LEVEL, C_MONEY, C_MSG, C_SPELL, C_STATUS, GameDefs, GameVars, Border,
-  CharDisp, CharGen, CharHlp, ChgClass, ClassCal, MenuCore, Party, RandItem, Shop, StrUtil, TextRend, ViewChar;
+  CharDisp, CharGen, CharHlp, ChgClass, ClassCal, MenuCore, Party, RandItem, Shop, StrUtil, TextRend, ViewChar, UiColor;
 
 const
   { the Levels screen's first row and its columns }
@@ -140,7 +140,8 @@ begin
   repeat
     DrawLevels(sel);
     MenuCore.arrowsToCaller := True;
-    key := MenuCore.MenuHorizontal('Levels: ', 'Experience Done', LightMagenta, LightGreen, White, True, False, ext);
+    key := MenuCore.MenuHorizontal('Levels: ', 'Experience Done', promptColor, optionColor, commandColor, True, False,
+                                   ext);
     cls := held[sel];
     if ext then
       with GameVars.curChar^ do
@@ -183,7 +184,8 @@ var
 begin
   repeat
     ViewChar.DisplayChar(GameVars.curChar);
-    key := MenuCore.MenuHorizontal('Health: ', 'Heal Status Exit', LightMagenta, LightGreen, White, False, False, ext);
+    key := MenuCore.MenuHorizontal('Health: ', 'Heal Status Exit', promptColor, optionColor, commandColor, False,
+                                   False, ext);
     with GameVars.curChar^ do
       case key of
         'H': begin
@@ -286,7 +288,7 @@ begin
     else if item^.itemType = C_ITEM.BRACERS then
       TextRend.DisplayString(NAME_COL, LEVEL_ROW + 2, LightGreen, 'Left and Right change its AC.');
     MenuCore.arrowsToCaller := True;
-    key := MenuCore.MenuHorizontal('Add: ', 'Take Exit', LightMagenta, LightGreen, White, True, False, ext);
+    key := MenuCore.MenuHorizontal('Add: ', 'Take Exit', promptColor, optionColor, commandColor, True, False, ext);
     if ext and (pos <> 0) then begin
       if (key = C_KEYS.LEFT) and (item^.plus > 0) then
         Dec(item^.plus);
@@ -352,8 +354,8 @@ begin
   redraw := True;
   sel := nil;
   Border.ClearBox(C_MSG.TEXT_LEFT, C_MSG.TEXT_TOP, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM);
-  key := MenuCore.MenuVertical('Add: ', 'Take', LightMagenta, LightGreen, White, 1, 1, 38, 22, head, True, redraw,
-                               idx, sel);
+  key := MenuCore.MenuVertical('Add: ', 'Take', promptColor, optionColor, commandColor, 1, 1, 38, 22, head, True,
+                               redraw, idx, sel);
   code := 0;
   if (key <> C_KEYS.NONE) and (sel <> nil) then begin
     line := MenuCore.ListIndex(head, sel);
@@ -397,7 +399,7 @@ begin
                               StrUtil.NumStr(GameVars.curChar^.coins[m]), False);
     redraw := True;
     sel := nil;
-    key := MenuCore.MenuVertical('Money: ', 'Set', LightMagenta, LightGreen, White, 12, 7, 27, 13, head, True,
+    key := MenuCore.MenuVertical('Money: ', 'Set', promptColor, optionColor, commandColor, 12, 7, 27, 13, head, True,
                                  redraw, idx, sel);
     m := -1;
     if (key <> C_KEYS.NONE) and (sel <> nil) and (MenuCore.ListIndex(head, sel) >= 0) then
@@ -421,7 +423,8 @@ var
 begin
   repeat
     ViewChar.DisplayChar(GameVars.curChar);
-    key := MenuCore.MenuHorizontal('Gear: ', 'Add Money Exit', LightMagenta, LightGreen, White, False, False, ext);
+    key := MenuCore.MenuHorizontal('Gear: ', 'Add Money Exit', promptColor, optionColor, commandColor, False, False,
+                                   ext);
     case key of
       'A': AddItem;
       'M': MoneyTool;
@@ -464,7 +467,7 @@ begin
     redraw := True;
     sel := nil;
     Border.ClearBox(C_MSG.TEXT_LEFT, C_MSG.TEXT_TOP, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM);
-    key := MenuCore.MenuVertical('Known: ', 'Toggle', LightMagenta, LightGreen, White, 1, 1, 38, 22, head, True,
+    key := MenuCore.MenuVertical('Known: ', 'Toggle', promptColor, optionColor, commandColor, 1, 1, 38, 22, head, True,
                                  redraw, idx, sel);
     k := 0;
     if (key <> C_KEYS.NONE) and (sel <> nil) then
@@ -483,7 +486,7 @@ var
 begin
   repeat
     ViewChar.DisplayChar(GameVars.curChar);
-    key := MenuCore.MenuHorizontal('Spells known: ', 'Mage Cleric Exit', LightMagenta, LightGreen, White, False,
+    key := MenuCore.MenuHorizontal('Spells known: ', 'Mage Cleric Exit', promptColor, optionColor, commandColor, False,
                                    False, ext);
     case key of
       'M': SpellList(1);
@@ -500,8 +503,8 @@ begin
   if GameVars.curChar = nil then Exit;
   repeat
     ViewChar.DisplayChar(GameVars.curChar);
-    key := MenuCore.MenuHorizontal('', 'Abilities Levels Gear Magic Health Exit', LightMagenta, LightGreen, White,
-                                   False, False, ext);
+    key := MenuCore.MenuHorizontal('', 'Abilities Levels Gear Magic Health Exit', promptColor, optionColor,
+                                   commandColor, False, False, ext);
     if ext then begin
       if key in [C_KEYS.HOME, C_KEYS.END_KEY, C_KEYS.UP, C_KEYS.DOWN] then
         Party.SelectPrevNextChar(key);

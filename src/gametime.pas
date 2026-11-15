@@ -31,7 +31,7 @@ procedure ResetGame;
 implementation
 
 uses C_TIME, C_MSG, GameDefs, GameVars, Crt, TextRend, CharHlp, MenuCore, Magic, C_KEYS, C_GBVM, C_SPELL,
-  FxEngine, StrUtil, CharDisp, Dice, Clock, AbilAdj;
+  FxEngine, StrUtil, CharDisp, Dice, Clock, AbilAdj, UiColor;
 
 var
   { Spell preparation timers for the party slots. }
@@ -119,8 +119,8 @@ begin
   repeat
     GameTime.DisplayRestTime(sel);
     MenuCore.arrowsToCaller := True;
-    ch := MenuCore.MenuHorizontal('', 'Rest   daYs Hours Mins   Inc Dec   Exit', LightMagenta, LightGreen,
-                                  White, True, False, ext);
+    ch := MenuCore.MenuHorizontal('', 'Rest   daYs Hours Mins   Inc Dec   Exit', promptColor, optionColor,
+                                  commandColor, True, False, ext);
     if ext then
       case ch of
         { up arrow -> 'I'nc }
@@ -365,7 +365,7 @@ begin
   do begin
     if KeyPressed then begin
       GameTime.DisplayRestTime(0);
-      if MenuCore.YesNoMenu('Stop Resting? ', LightMagenta, LightGreen, White) = 'Y' then
+      if MenuCore.YesNoMenu('Stop Resting? ', promptColor, optionColor, commandColor) = 'Y' then
         stop := True
       else
         TextRend.ClearBottomLine;

@@ -41,7 +41,7 @@ implementation
 uses Crt, C_AREA, C_TIME, C_MSG, GameDefs, GameVars, SoundDrv, Camp, ViewChar, JrnlView, View3D, MapTiles, C_ECL,
   C_KEYS, C_LEVEL, C_STATUS, C_GBVM, C_DIR, C_SOUND, C_SPELL, SaveLoad, Blit, Border, CharHlp, FxEngine,
   MenuCore, Portrait, TextRend, CharDisp, Party, Dice, CompTool, KeyHelp, BeastMnu, Magic, JrnlSeen, Wilds,
-  CharGen;
+  CharGen, UiColor;
 
 var
   { Door-opening flags: bash, pick and knock. }
@@ -477,11 +477,11 @@ begin
         c := MenuCore.MenuHorizontal(CharDisp.MiscInfoText + ' ', menuMove, LightGreen, LightGreen, White, True, False,
                                      ext)
       else if moveMode then
-        c := MenuCore.MenuHorizontal('', menuMove, LightMagenta, LightGreen, White, True, False, ext)
+        c := MenuCore.MenuHorizontal('', menuMove, promptColor, optionColor, commandColor, True, False, ext)
       else if wild then
-        c := MenuCore.MenuHorizontal('', menuWild, LightMagenta, LightGreen, White, True, False, ext)
+        c := MenuCore.MenuHorizontal('', menuWild, promptColor, optionColor, commandColor, True, False, ext)
       else
-        c := MenuCore.MenuHorizontal('', menu3D, LightMagenta, LightGreen, White, True, False, ext);
+        c := MenuCore.MenuHorizontal('', menu3D, promptColor, optionColor, commandColor, True, False, ext);
       if not ext and moveMode then begin
         { Exit or Escape }
         if c in [C_KEYS.NONE, 'E'] then begin
@@ -566,7 +566,7 @@ begin
   if menuStr = ' Exit' then
     Explore.ChangeBarrierImpassable(GameVars.gMapX, GameVars.gMapY, GameVars.gFacing)
   else
-    case MenuCore.MenuHorizontal('Locked. ', menuStr, LightMagenta, LightGreen, White, False, False,
+    case MenuCore.MenuHorizontal('Locked. ', menuStr, promptColor, optionColor, commandColor, False, False,
                                  unusedExtendedKey) of
       'B': DoorMenu := Explore.BashDoor;
       'P': if barred then

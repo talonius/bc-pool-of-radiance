@@ -43,7 +43,7 @@ implementation
 
 uses Crt, C_MSG, C_SPELL, GameVars, Shop, SaveLoad, Magic, C_KEYS, C_STATUS, C_IFC, C_GBVM, C_MONEY, C_EFFECT, Stats,
   Bestiary, BeastFil, Border, CharHlp, CharExt, EclMenu, MenuCore, Money, TextRend, ViewChar, CharDisp, Party, Dice,
-  ClassCal, CbtActs, C_ITEM;
+  ClassCal, CbtActs, C_ITEM, UiColor;
 
 var
   { Combat outcome. }
@@ -305,7 +305,7 @@ begin
   head := GameVars.treasureItems;
   { Alt-n opens member n's items (ViewChar.AltItems), for LootTakeItemMenu to run }
   MenuCore.memberKeysToCaller := True;
-  c := MenuCore.MenuVertical('Items: ', 'Take', LightMagenta, LightGreen, White, 1, 4, 38, 22,
+  c := MenuCore.MenuVertical('Items: ', 'Take', promptColor, optionColor, commandColor, 1, 4, 38, 22,
                              head, True, redraw, idx, cursor);
   itemToTake := cursor;
 end;
@@ -374,7 +374,7 @@ begin
   if treasure then begin
     if items then begin
       repeat
-        c := MenuCore.MenuHorizontal('Take: ', 'Money Items Exit', LightMagenta, LightGreen, White,
+        c := MenuCore.MenuHorizontal('Take: ', 'Money Items Exit', promptColor, optionColor, commandColor,
                                      True, True, ext);
         { an extended key only steps the character: its scan code is no command letter (keypad 6 and 9 came back as 'M'
           and 'I', #730); Alt-n opens member n's items (#1195) }
@@ -446,7 +446,7 @@ begin
       menu := 'View Take Pool Share' + tail
     else if items then
       menu := 'View Take Pool' + tail;
-    c := MenuCore.MenuHorizontal(query, menu, LightMagenta, LightGreen, White, True, True, ext);
+    c := MenuCore.MenuHorizontal(query, menu, promptColor, optionColor, commandColor, True, True, ext);
     { the coin each party member gains or puts back here, Take, Share, Pool or Drop alike, is Coin looted (net) (#611) }
     Stats.MarkCoins;
     { an extended key only steps the character: its scan code is no command letter (Delete came back as 'S' and shared

@@ -101,7 +101,8 @@ procedure ShowItemPage(var items: TPageItems; count: Integer; var cur: Integer);
 
 implementation
 
-uses Crt, GameDefs, GameVars, C_KEYS, CharHlp, FxEngine, StrUtil, TextRend, Border, MenuCore, CharDisp, SpellTxt;
+uses Crt, GameDefs, GameVars, C_KEYS, CharHlp, FxEngine, StrUtil, TextRend, Border, MenuCore, CharDisp, SpellTxt,
+  UiColor;
 
 const
   { what a save does against each spell, checked against the handlers (Magic): Silence's negates its aura, Stinking
@@ -672,7 +673,7 @@ begin
     step := 0;
     GameVars.horizChoice := 1;
     repeat
-      ch := MenuCore.MenuHorizontal(query, menu, LightMagenta, LightGreen, White, True, False, ext);
+      ch := MenuCore.MenuHorizontal(query, menu, promptColor, optionColor, commandColor, True, False, ext);
       if ext then
         case ch of
           C_KEYS.UP, C_KEYS.PAGE_UP: step := -1;

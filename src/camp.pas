@@ -19,7 +19,7 @@ implementation
 
 uses Types, Crt, C_MSG, GameDefs, GameVars, CharGen, GameTime, C_EFFECT, C_KEYS, C_STATUS, C_IFC, C_SPELL, C_LEVEL,
   FxEngine, Portrait, Options, Border, C_TIME, CharHlp, GameIo, Magic, MenuCore, SaveLoad, TextRend, ViewChar, StrUtil,
-  CharDisp, Party, Dice, UsualSpl, Clock, Explore, FixPlan, CharExt;
+  CharDisp, Party, Dice, UsualSpl, Clock, Explore, FixPlan, CharExt, UiColor;
 
 const
   { CanDoSpellActivity's activity selector: ACT_CAST, ACT_MEMORIZE or ACT_SCRIBE. }
@@ -370,7 +370,7 @@ begin
     spellId := Magic.SpellMenu(5, 5, idx, notEmpty);
     redraw := True;
     if notEmpty then begin
-      if MenuCore.YesNoMenu('Memorize These Spells? ', Yellow, LightGreen, White) = 'N' then
+      if MenuCore.YesNoMenu('Memorize These Spells? ', warnColor, optionColor, commandColor) = 'N' then
         Camp.ResetMemorize(GameVars.curChar)
       else begin
         Camp.RememberUsualSpells;
@@ -404,7 +404,7 @@ begin
       idx := -1;
       spellId := Magic.SpellMenu(5, 5, idx, notEmpty);
       if notEmpty then
-        if MenuCore.YesNoMenu('Memorize these spells? ', Yellow, LightGreen, White) = 'N' then
+        if MenuCore.YesNoMenu('Memorize these spells? ', warnColor, optionColor, commandColor) = 'N' then
           Camp.ResetMemorize(GameVars.curChar)
         else
           Camp.RememberUsualSpells;
@@ -440,7 +440,7 @@ begin
     spellId := Magic.SpellMenu(6, 0, idx, notEmpty);
     redraw := True;
     if notEmpty then begin
-      if MenuCore.YesNoMenu('Scribe These Spells? ', Yellow, LightGreen, White) = 'N' then
+      if MenuCore.YesNoMenu('Scribe These Spells? ', warnColor, optionColor, commandColor) = 'N' then
         Camp.ResetScribe(GameVars.curChar)
       else
         done := True;
@@ -506,7 +506,7 @@ begin
       idx := -1;
       spellId := Magic.SpellMenu(6, 0, idx, notEmpty);
       if notEmpty then
-        if MenuCore.YesNoMenu('Scribe these spells? ', Yellow, LightGreen, White) = 'N' then
+        if MenuCore.YesNoMenu('Scribe these spells? ', warnColor, optionColor, commandColor) = 'N' then
           Camp.ResetScribe(GameVars.curChar);
     end;
     if redraw then
@@ -623,7 +623,7 @@ var
 begin
   c := ' ';
   while (interrupted = False) and (not (c in [C_KEYS.NONE, 'E'])) do begin
-    c := MenuCore.MenuHorizontal('', magicMenu, LightMagenta, LightGreen, White, True, True, ext);
+    c := MenuCore.MenuHorizontal('', magicMenu, promptColor, optionColor, commandColor, True, True, ext);
     if ext then
       Camp.SelectOtherChar(c)
     else
@@ -710,8 +710,8 @@ begin
   selected := 0;
   c := ' ';
   while not (c in [C_KEYS.NONE, 'E']) do begin
-    c := MenuCore.MenuHorizontal('Party Order: ', orderMenus[selected], LightMagenta, LightGreen,
-                                 White, True, True, ext);
+    c := MenuCore.MenuHorizontal('Party Order: ', orderMenus[selected], promptColor, optionColor,
+                                 commandColor, True, True, ext);
     if ext then begin
       if selected = 0 then begin
         Camp.SelectOtherChar(c);
@@ -739,14 +739,14 @@ procedure CampDropMenu;
 begin
   if (GameVars.curChar^.nextCharAddr = nil) and (GameVars.curChar = GameVars.creatureList) then begin
     { last member: quit-to-DOS confirm }
-    if MenuCore.YesNoMenu('quit TO DOS: ', Yellow, LightGreen, White) = 'Y' then begin
+    if MenuCore.YesNoMenu('quit TO DOS: ', warnColor, optionColor, commandColor) = 'Y' then begin
       SaveLoad.RemoveCreature(False, True);
       GameIo.ExitGame;
     end;
     Exit;
   end;
   CharDisp.PrintNameString(GameVars.curChar, 'will be gone', 10, False);
-  if MenuCore.YesNoMenu('Drop from party? ', Yellow, LightGreen, White) = 'Y' then begin
+  if MenuCore.YesNoMenu('Drop from party? ', warnColor, optionColor, commandColor) = 'Y' then begin
     if GameVars.curChar^.enabled <> 0 then
       CharDisp.PrintNameString(GameVars.curChar, 'bids you farewell.', 10, True)
     else
@@ -775,7 +775,7 @@ var
 begin
   c := ' ';
   while not (c in [C_KEYS.NONE, 'E']) do begin
-    c := MenuCore.MenuHorizontal('Alter: ', alterMenu, LightMagenta, LightGreen, White, True, True, ext);
+    c := MenuCore.MenuHorizontal('Alter: ', alterMenu, promptColor, optionColor, commandColor, True, True, ext);
     if ext then
       Camp.SelectOtherChar(c)
     else
@@ -787,7 +787,7 @@ begin
                  s := 'Icon Portrait Exit'
                else
                  s := 'Icon Exit';
-               c2 := MenuCore.MenuHorizontal('Character: ', s, LightMagenta, LightGreen, White, True, True, ext);
+               c2 := MenuCore.MenuHorizontal('Character: ', s, promptColor, optionColor, commandColor, True, True, ext);
                if ext then
                  Camp.SelectOtherChar(c2)
                else
@@ -1052,7 +1052,7 @@ begin
     { 'Camp:' plus the menu fills the 40-column bottom line exactly, as in Curse, so the prompt has no space after it
       (#674) }
     MenuCore.helpToCaller := True;
-    c := MenuCore.MenuHorizontal('Camp:', campMenu, LightMagenta, LightGreen, White, True, True, ext);
+    c := MenuCore.MenuHorizontal('Camp:', campMenu, promptColor, optionColor, commandColor, True, True, ext);
     if ext then begin
       { F1's Command Keys window leaves out F5 and F8, which camp does not take (#855) }
       if not Explore.SideScreen(c, False, False) then

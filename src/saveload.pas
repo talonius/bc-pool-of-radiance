@@ -99,7 +99,7 @@ implementation
 uses Dos, DiskRec, Crt, C_AREA, GameDefs, GameVars, Blit, TextRend, GameIo, MenuCore, Ending, ClassCal, View3D,
   MapTiles, C_KEYS, C_GBVM, SaveMenu, AreaName, Vault, Stats, DaxIo, CharHlp, FileUtil, Party, StrUtil,
   UsualSpl, VidOps, Explored, MapNotes, JrnlSeen, C_EFFECT, C_LEVEL, CharDisp, CharExt,
-  BeastFil{$IFDEF FPC}, NatFile{$ENDIF};
+  BeastFil{$IFDEF FPC}, NatFile{$ENDIF}, UiColor;
 
 type
   { the party's names in a savgam file: the CHRDATxN files they are kept in }
@@ -688,10 +688,10 @@ end;
 
 procedure QuitToDos(askSave: Boolean);
 begin
-  if MenuCore.YesNoMenu('Exit to DOS? ', Yellow, LightGreen, White) = 'Y' then
+  if MenuCore.YesNoMenu('Exit to DOS? ', warnColor, optionColor, commandColor) = 'Y' then
     if not askSave or (GameVars.recentlySaved <> 0) or (GameVars.creatureList = nil) then
       GameIo.ExitGame
-    else if MenuCore.YesNoMenu('Save first? ', Yellow, LightGreen, White) = 'N' then
+    else if MenuCore.YesNoMenu('Save first? ', warnColor, optionColor, commandColor) = 'N' then
       GameIo.ExitGame
     else if SaveLoad.SaveGame then
       GameIo.ExitGame;
@@ -888,7 +888,7 @@ begin
   if FileUtil.Exists(name) then Exit;
   msg := 'Save and exit  Insert disk #' + StrUtil.NumStr(GameVars.diskIndex);
   repeat
-    ch := MenuCore.MenuHorizontal('', msg, LightMagenta, LightGreen, White, False, False, ext);
+    ch := MenuCore.MenuHorizontal('', msg, promptColor, optionColor, commandColor, False, False, ext);
     saving := (not ext) and (ch = 'S');
     if saving then begin
       x := GameVars.gMapX;

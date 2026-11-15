@@ -30,7 +30,7 @@ procedure JournalMenu;
 implementation
 
 uses Crt, Types, C_JRNL, C_KEYS, GameVars, TextRend, Border, MenuCore, CharHlp, JrnlList, JrnlQst, CharDisp,
-  C_MSG, JrnlSeen;
+  C_MSG, JrnlSeen, UiColor;
 
 const
   { The pane holds the item: its title on TITLE_ROW and its text from TEXT_TOP down, each as wide as the text is
@@ -303,7 +303,7 @@ begin
       GameVars.horizChoice := 2;
     MenuCore.unmarked := [Length(keys)];
     MenuCore.enterToCaller := True;
-    ch := MenuCore.MenuHorizontal(PROMPT, menu, LightMagenta, LightGreen, White, True, False, ext);
+    ch := MenuCore.MenuHorizontal(PROMPT, menu, promptColor, optionColor, commandColor, True, False, ext);
     if ext then begin
       case ch of
         C_KEYS.PAGE_DOWN: ch := 'N';
@@ -437,7 +437,7 @@ begin
       menu := menu + ' Quests Exit';
     end;
     GameVars.horizChoice := OptionOf(lastKey);
-    ch := MenuCore.MenuHorizontal(PROMPT, menu, LightMagenta, LightGreen, White, True, False, ext);
+    ch := MenuCore.MenuHorizontal(PROMPT, menu, promptColor, optionColor, commandColor, True, False, ext);
     if ext then begin
       { an empty list has nothing to move through }
       if count > 0 then

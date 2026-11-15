@@ -17,7 +17,7 @@ procedure ShowLog(title: Types.TStr40);
 
 implementation
 
-uses Crt, C_KEYS, GameVars, TextRend, Border, MenuCore, CbtLog, LogWrap;
+uses Crt, C_KEYS, GameVars, TextRend, Border, MenuCore, CbtLog, LogWrap, UiColor;
 
 const
   { one framed box from TOP_ROW to BOTTOM_ROW, as the Settings screen's: the title on TOP_ROW, a blank row, then the
@@ -134,8 +134,8 @@ begin
   LogView.DrawPage;
   GameVars.horizChoice := 1;
   repeat
-    ch := MenuCore.MenuHorizontal('Messages: ', 'Up Down Top eNd Exit', LightMagenta, LightGreen, White, True, False,
-                                  ext);
+    ch := MenuCore.MenuHorizontal('Messages: ', 'Up Down Top eNd Exit', promptColor, optionColor, commandColor, True,
+                                  False, ext);
     if ext then
       case ch of
         C_KEYS.UP: LogView.ScrollTo(top - 1);

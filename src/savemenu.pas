@@ -90,7 +90,7 @@ procedure CheckSaveDir;
 implementation
 
 uses Crt, Dos, GameVars, TextRend, Border, GameIo, DaxIo, MenuCore, AreaName, C_KEYS, StrUtil
-  {$IFDEF FPC}, NatFile{$ENDIF};
+  {$IFDEF FPC}, NatFile{$ENDIF}, UiColor;
 
 const
   INFO_SIG = 'SINF';
@@ -410,8 +410,8 @@ begin
     MenuCore.extraKeys := listed + EXIT_KEY;
     MenuCore.unmarked := [OPT_EXIT];
     MenuCore.enterToCaller := True;
-    ch := MenuCore.MenuHorizontal('Game: ', 'Next Prev ' + action + ' Quit Exit', LightMagenta, LightGreen, White,
-                                  True, False, ext);
+    ch := MenuCore.MenuHorizontal('Game: ', 'Next Prev ' + action + ' Quit Exit', promptColor, optionColor,
+                                  commandColor, True, False, ext);
     { Enter takes the bottom line's current option }
     if (not ext) and (ch = C_KEYS.ENTER) then
       case GameVars.horizChoice of

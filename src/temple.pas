@@ -33,7 +33,7 @@ procedure Look(var c: TTempleChar);
 implementation
 
 uses Types, Crt, C_MSG, C_MONEY, C_LEVEL, GameVars, TextRend, Money, Magic, FxEngine, C_EFFECT, C_KEYS, C_STATUS,
-  C_RACE, Stats, Border, CharHlp, MenuCore, Shop, CharDisp, Dice, ClassCal, MoneyCal, StrUtil, ViewChar;
+  C_RACE, Stats, Border, CharHlp, MenuCore, Shop, CharDisp, Dice, ClassCal, MoneyCal, StrUtil, ViewChar, UiColor;
 
 var
   { the temple's rules, at the prices TempleMainMenu was entered with }
@@ -112,17 +112,18 @@ end;
 function Ask(msg: String): Boolean;
 begin
   CharDisp.PrintNameString(GameVars.curChar, msg, 0, False);
-  Ask := MenuCore.YesNoMenu('cast cure anyway: ', LightMagenta, LightGreen, White) = 'Y';
+  Ask := MenuCore.YesNoMenu('cast cure anyway: ', promptColor, optionColor, commandColor) = 'Y';
   CharDisp.ClearMessageWindow;
 end;
 
 { The quote and "pay for cure "; a Yes pays from the current character first, then the pooled treasure. True only when
-  it was paid. }
+  it was paid. The menu is in the bottom line's colors: SSI swapped them here, Yes and No white with green hotkeys
+  (POR-0231). }
 function Pay(quote: String; cost: LongInt): Boolean;
 begin
   TextRend.ShowMessage(LightGreen, True, quote);
   Pay := False;
-  if MenuCore.YesNoMenu('pay for cure ', LightMagenta, White, LightGreen) = 'Y' then
+  if MenuCore.YesNoMenu('pay for cure ', promptColor, optionColor, commandColor) = 'Y' then
     Pay := Money.PayGold(GameVars.curChar, cost);
 end;
 
@@ -346,8 +347,8 @@ begin
     { from row 3, the row under the divider: the twelve services and Exit fill rows 3..15 without a second page. Alt-n
       opens member n's items (ViewChar.AltItems, #1195), and member n is the patient when the list comes back. }
     MenuCore.memberKeysToCaller := True;
-    c := MenuCore.MenuVertical('', 'Heal Repair Exit', LightMagenta, LightGreen, White, 2, 3, 38, 15, list, False,
-                               redraw, idx, sel);
+    c := MenuCore.MenuVertical('', 'Heal Repair Exit', promptColor, optionColor, commandColor, 2, 3, 38, 15, list,
+                               False, redraw, idx, sel);
     case c of
       'H', C_KEYS.ENTER:
         if (idx >= 0) and (idx < count) then

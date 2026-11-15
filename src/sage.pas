@@ -19,7 +19,7 @@ procedure SageMenu;
 implementation
 
 uses Crt, Types, C_DATA, DiskRec, GameVars, DaxIo, DataArc, EclMenu, SaveLoad, Bestiary, BeastFil, BeastMnu, Money,
-  MoneyCal, MenuCore, TextRend, CharDisp, StrUtil;
+  MoneyCal, MenuCore, TextRend, CharDisp, StrUtil, UiColor;
 
 const
   { MenuHorizontalCS returns the zero-based index of the selected item. }
@@ -192,7 +192,7 @@ begin
             '''KNOWLEDGE IS A WEAPON. NAME YOUR FOE, AND I CAN SHARPEN YOUR BLADE.''';
   repeat
     Sage.Say(answer);
-    choice := EclMenu.MenuHorizontalCharacterSelect('', MENU, LightMagenta, LightGreen, White, True, False);
+    choice := EclMenu.MenuHorizontalCharacterSelect('', MENU, promptColor, optionColor, commandColor, True, False);
     if choice = CHOICE_ASK then begin
       b := BeastMnu.PickBeast('Ask about: ');
       Sage.Redraw;

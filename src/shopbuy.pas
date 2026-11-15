@@ -125,7 +125,7 @@ procedure BuyScreen;
 implementation
 
 uses Crt, C_EQUIP, C_KEYS, GameVars, Border, CharDisp, CharHlp, KeyHelp, MenuCore, MoneyCal, Party, Shop, StrUtil,
-  TextRend;
+  TextRend, UiColor;
 
 const
   { the screen (mocks/new-shop.txt): the tabs' row and their columns, the list box, the panel's rows and its right
@@ -617,14 +617,14 @@ begin
     { F1: the screen's keys (KeyHelp.SHOP_KEYS) }
     MenuCore.helpToCaller := True;
     if shown.count = 0 then begin
-      c := MenuCore.MenuHorizontal('Shop: ', menu + ' Exit', LightMagenta, LightGreen, White, True, False, ext);
+      c := MenuCore.MenuHorizontal('Shop: ', menu + ' Exit', promptColor, optionColor, commandColor, True, False, ext);
       { only Alt-n and F1 among the extended keys: the list has nothing to move through }
       if ext and (Party.AltMember(c) = 0) and (c <> C_KEYS.F1) then
         c := ' ';
     end else begin
       MenuCore.lineScroll := True;
       MenuCore.movesToCaller := True;
-      c := MenuCore.MenuVertical('Shop: ', menu + ' Buy', LightMagenta, LightGreen, White, LIST_LEFT, LIST_TOP,
+      c := MenuCore.MenuVertical('Shop: ', menu + ' Buy', promptColor, optionColor, commandColor, LIST_LEFT, LIST_TOP,
                                  LIST_RIGHT, LIST_BOTTOM, lines, True, redraw, idx, node);
       if node <> nil then
         sel := shown.items[idx];
