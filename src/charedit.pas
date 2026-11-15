@@ -440,6 +440,9 @@ var
   n: Byte;
   m: Byte;
   k: Byte;
+  i: Byte;
+  j: Integer;
+  t: Byte;
   idx: Integer;
   redraw: Boolean;
   key: Char;
@@ -454,13 +457,29 @@ begin
       with GameDefs.spellTable[m] do
         if CharHlp.IsSpell(m) and (castClass = cls) and (levelSp >= 1) and (levelSp <= Types.CASTER_LEVEL_LAST)
         then begin
-          mark := '  ';
-          if CharHlp.KnowsSpell(GameVars.curChar, m) then
-            mark := '* ';
-          MenuCore.AppendMenuLine(head, tail, mark + StrUtil.NumStr(levelSp) + ' ' + GameDefs.spellNames[m], False);
           Inc(n);
           spells[n] := m;
         end;
+    { insertion sort of the spell ids by level, then by name }
+    for i := 2 to n do begin
+      t := spells[i];
+      j := i - 1;
+      while (j >= 1) and ((GameDefs.spellTable[spells[j]].levelSp > GameDefs.spellTable[t].levelSp)
+            or ((GameDefs.spellTable[spells[j]].levelSp = GameDefs.spellTable[t].levelSp)
+                and (GameDefs.spellNames[spells[j]] > GameDefs.spellNames[t]))) do begin
+        spells[j + 1] := spells[j];
+        Dec(j);
+      end;
+      spells[j + 1] := t;
+    end;
+    for i := 1 to n do begin
+      m := spells[i];
+      mark := '  ';
+      if CharHlp.KnowsSpell(GameVars.curChar, m) then
+        mark := '* ';
+      MenuCore.AppendMenuLine(head, tail, mark + StrUtil.NumStr(GameDefs.spellTable[m].levelSp) + ' ' +
+                              GameDefs.spellNames[m], False);
+    end;
     redraw := True;
     sel := nil;
     Border.ClearBox(C_MSG.TEXT_LEFT, C_MSG.TEXT_TOP, C_MSG.TEXT_RIGHT, C_MSG.TEXT_BOTTOM);
