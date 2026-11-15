@@ -2,12 +2,12 @@
   every type no other tab does; the Show Usable filter; a list line's price and name; what readying a copy of the
   highlighted item would do to the buyer's armor class and damage (TryOn), with the shield put away for a two-handed
   weapon, arrows that fit the readied bow and quarrels that do not, a cursed weapon in the way and a class that may not
-  use the item, the character left as it was each time; the NEW line's texts (NewTexts); and the scroll bar's thumb
-  (MenuCore.ScrollThumb). }
+  use the item, the character left as it was each time; and the NEW line's texts (NewTexts). The scroll bar's knob
+  (MenuCore.ScrollThumb) is tested in TScroll. }
 {$I COMPILER.INC}
 program TShopBuy;
 
-uses Types, C_EQUIP, C_ITEM, CharHlp, MenuCore, ShopBuy, StrUtil, TestKit;
+uses Types, C_EQUIP, C_ITEM, CharHlp, ShopBuy, StrUtil, TestKit;
 
 const
   TWO_HANDED_SWORD = 38;
@@ -32,8 +32,6 @@ var
   dmg: Types.TStr40;
   i: Integer;
   ok: Boolean;
-  first: Integer;
-  size: Integer;
 
 { Make item one of itemType with plus, not readied. }
 procedure MakeItem(var it: Types.TItemRec; itemType: Byte; plus: ShortInt);
@@ -246,18 +244,5 @@ begin
   MakeItem(item, SHIELD_TYPE, 0);
   CheckTry('a shield, which puts the bow away', '2', '1d2', True, False);
 
-  { the scroll bar's thumb }
-  MenuCore.ScrollThumb(10, 13, 0, first, size);
-  TestKit.Check((first = 0) and (size = 13), 'a list that fits: the whole bar');
-  MenuCore.ScrollThumb(26, 13, 0, first, size);
-  TestKit.Check((first = 0) and (size = 6), 'twice the box: half the bar, at the top');
-  MenuCore.ScrollThumb(26, 13, 13, first, size);
-  TestKit.Check(first + size = 13, 'at the end: at the bottom');
-  MenuCore.ScrollThumb(26, 13, 12, first, size);
-  TestKit.Check(first + size < 13, 'a line short of the end: off the bottom');
-  MenuCore.ScrollThumb(26, 13, 1, first, size);
-  TestKit.Check(first > 0, 'a line past the start: off the top');
-  MenuCore.ScrollThumb(1000, 13, 500, first, size);
-  TestKit.Check((size = 1) and (first > 0) and (first < 12), 'a long list: a one-row thumb in the middle');
   TestKit.Done;
 end.

@@ -126,10 +126,13 @@ THE KNOB'S SIZE AND PLACE
 
 The arrows take the bar's first and last rows; the knob moves in the rows
 between them (the track rows). Its length and position come from
-MenuCore.ScrollThumb, as the Buy screen's bar does now: the share of the
-track the knob covers is the share of the list shown, at least one row; it
+MenuCore.ScrollThumb: the share of the track the knob covers is the share
+of the list shown, rounded to the nearest row, at least one row and, while
+the list is longer than the box, at least one row short of the track; it
 touches the up arrow only at the list's start and the down arrow only at
-its end.
+its end. (ScrollThumb is given the track's length apart from the list's,
+since the arrows take two of the bar's rows and an entry may be several
+rows, as a Load/Save slot is three.)
 
 Load/Save shows 7 of up to 11 slots on 20 track rows: a knob of 13 rows.
 

@@ -59,14 +59,15 @@ def knob_cell(first, last):
 
 def scroll_thumb(count, shown, track, top):
     """The knob's first track row (from 0) and length for a list of count entries, shown at once, on track rows, whose
-    first entry shown is top. The knob's share of the track is the share of the list shown, rounded, at least a row;
-    it touches the track's top only at the list's start and its bottom only at its end (scrollbar.txt).
-
-    MenuCore.ScrollThumb has no track argument (its bar is as long as the list box) and rounds the length down; the
-    edge bar's arrows make the track shorter than the box, so this is the version the design asks for."""
+    first entry shown is top. The knob's share of the track is the share of the list shown, rounded, at least a row
+    and, while the list is longer than its box, at least a row short of the track; it touches the track's top only at
+    the list's start and its bottom only at its end (scrollbar.txt). The same as MenuCore.ScrollThumb (TScroll)."""
     if track < 1 or count <= shown:
         return 0, track
-    size = max(1, (2 * track * shown + count) // (2 * count))
+    size = (2 * track * shown + count) // (2 * count)
+    if size >= track and track > 1:
+        size = track - 1
+    size = max(1, size)
     top = max(0, min(top, count - shown))
     room = track - size
     first = (top * room + (count - shown) // 2) // (count - shown)
