@@ -248,7 +248,7 @@ What a screen is built from. Today's units, and where they are going:
 | Part | Today | To be |
 |---|---|---|
 | Frame | `Border.DrawBorder` per box, `DrawWindow`, `ClearToFrame`; one joint kept by special case | `Border.TFrame`: dividers, joints, a title in its top edge, and a scroll bar on a section's edge (`FrameBar`); the shop's Buy screen is drawn as one |
-| List | `MenuVertical` for lists of one-line strings, its behaviour set by globals (`fullPaging`, `lineScroll`, ...); about ten screens with lists of their own (Load/Save, the journal, the kill count, spell info, help pages) | one list: a section, the entry count, rows per entry, the first entry shown and the cursor, and a routine that draws an entry. It scrolls, stops at its ends, shows the bar, and redraws only what changed. `MenuVertical` becomes a list whose entries are strings |
+| List | `MenuVertical` for lists of one-line strings, its behaviour set by globals (`fullPaging`, `lineScroll`, ...); about ten screens with lists of their own (Load/Save, the journal, the kill count, spell info, help pages) | `ListView`: a section, the entry count, rows per entry, the first entry shown and the cursor, and the screen's routine that draws an entry; it scrolls, stops at its ends, shows the bar and redraws only what changed. Load/Save is its first screen; `MenuVertical` becomes a list whose entries are strings |
 | "There's more" | `(more)` (`MenuCore.DrawMore`), Next/Prev, the text bar `*`/`-` | the scroll bar |
 | Bottom line | `MenuCore.MenuHorizontal` | unchanged |
 | Colors | literal colors at every call | a global variable per role |

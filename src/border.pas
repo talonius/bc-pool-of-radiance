@@ -37,6 +37,7 @@ type
     title: Types.TStr40;
     bar: array[0..MAX_DIVIDERS] of TFrameBar;
   end;
+  PFrame = ^TFrame;
 
 procedure DrawBorder(ulCol, ulRow, lrCol, lrRow: ShortInt; corner: Byte);
 

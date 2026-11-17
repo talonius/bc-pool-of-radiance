@@ -15,7 +15,7 @@ uses {$IFDEF FPC}{$IFDEF UNIX}CThreads, {$ENDIF}SdlHost, SdlSound, {$ENDIF}Types
   Journal1, Journal2, Journal3, Journal4, JrnlList, JrnlQst, JrnlView, Options, CbtLog, LogWrap, LogView,
   Explore, CbtActs, EffHndlr, GameInit, CombatSt, CombatAi, Combat, EclVars, EclMenu, Shop, ShopBuy, PostCbt, TownCore,
   Temple, EclVm, BldShow, DataPat, BarArt, DataBld, Intro, HeapErr, SaveMenu, AreaName, Vault, VaultMnu, EclTrace,
-  KeyHelp, Advisory, Demo, CbtMini, WideView;
+  KeyHelp, Advisory, Demo, CbtMini, WideView, ListView;
 
 {$O Demo}
 {$O WideView}
@@ -27,6 +27,7 @@ uses {$IFDEF FPC}{$IFDEF UNIX}CThreads, {$ENDIF}SdlHost, SdlSound, {$ENDIF}Types
 {$O VaultMnu}
 {$O AreaName}
 {$O SaveMenu}
+{$O ListView}
 {$O HeapErr}
 {$O Intro}
 {$O DataPat}
