@@ -102,6 +102,10 @@ begin
   { the help pages of the shop's Buy screen and the Items screen }
   TestKit.Check(PageFits(@KeyHelp.SHOP_KEYS, KeyHelp.SHOP_LINES), 'Shop Keys fits the window');
   TestKit.Check(PageFits(@KeyHelp.ITEM_KEYS, KeyHelp.ITEM_LINES), 'Item Keys fits the window');
+  TestKit.Check(PageFits(@KeyHelp.SAVE_KEYS, KeyHelp.SAVE_LINES), 'Load/Save Keys fits the window');
+  TestKit.Check((PageLineOf(@KeyHelp.SAVE_KEYS, KeyHelp.SAVE_LINES, 'HOME') <> 0) and
+                (PageLineOf(@KeyHelp.SAVE_KEYS, KeyHelp.SAVE_LINES, 'Q ') <> 0),
+                'Load/Save Keys lists Home/End and Quit');
   TestKit.Check(PageLineOf(@KeyHelp.SHOP_KEYS, KeyHelp.SHOP_LINES, 'ALT-n') <> 0, 'Shop Keys lists Alt-n');
   TestKit.Check(PageLineOf(@KeyHelp.ITEM_KEYS, KeyHelp.ITEM_LINES, 'ALT-n') <> 0, 'Item Keys lists Alt-n');
   TestKit.Check(PageLineOf(@KeyHelp.ITEM_KEYS, KeyHelp.ITEM_LINES, '1, 2') <> 0, 'Item Keys lists the weapon sets');

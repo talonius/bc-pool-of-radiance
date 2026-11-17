@@ -104,5 +104,12 @@ begin
   TestKit.CheckEqualsS('Z STS', Held(Named(3, 'Z')), 'Z''s .sts stays');
 
   Clear;
+
+  { the time a slot was saved, as Load/Save shows it }
+  TestKit.CheckEqualsS('8:57 PM', SaveMenu.ClockText(20, 57), 'evening: 12-hour, PM');
+  TestKit.CheckEqualsS('12:04 PM', SaveMenu.ClockText(12, 4), 'noon is 12 PM');
+  TestKit.CheckEqualsS('12:30 AM', SaveMenu.ClockText(0, 30), 'midnight is 12 AM');
+  TestKit.CheckEqualsS('9:05 AM', SaveMenu.ClockText(9, 5), 'the minutes two digits');
+  TestKit.CheckEqualsS('11:59 PM', SaveMenu.ClockText(23, 59), 'the longest, 8 characters');
   TestKit.Done;
 end.

@@ -1,26 +1,26 @@
 +==========+ LOAD/SAVE GAME +==========+
-|                                      |
-| A: SAVE GAME A              8:57 PM  +
-|    NEW PHLAN             2026/10/21  ^
+|                                      ^
+| A: SAVE GAME A              8:57 PM  T
+|    NEW PHLAN             2026/10/21  #
 |                                      #
 | B: BIG FIGHT                8:39 PM  #
 |    VALHINGEN GRAVES      2026/10/21  #
 |                                      #
-| C: SPELLED UP               8:03 PM  .
-|    YARASH'S PYRAMID      2026/10/21  .
-|                                      .
-| D: SAVE GAME D             12:04 PM  .
-|    TRAINING HALL         2026/10/17  .
-|                                      .
-| E: SAVE GAME                8:47 PM  .
-|    VALHINGEN GRAVES      2026/10/21  .
-|                                      .
-| I: SAVE GAME I              9:01 PM  .
-|    PODAL PLAZA           2026/09/08  .        
-|                                      .
-| J: SAVE GAME J              7:00 PM  ^
-|    NEW PHLAN             2026/11/12  +
-|                                      |
+| C: SPELLED UP               8:03 PM  G
+|    YARASH'S PYRAMID      2026/10/21  #
+|                                      #
+| D: SAVE GAME D             12:04 PM  #
+|    TRAINING HALL         2026/10/17  #
+|                                      #
+| E: SAVE GAME                8:47 PM  B
+|    VALHINGEN GRAVES      2026/10/21  :
+|                                      :
+| I: SAVE GAME I              9:01 PM  :
+|    PODOL PLAZA           2026/09/08  :
+|                                      :
+| J: SAVE GAME J              7:00 PM  :
+|    NEW PHLAN             2026/11/12  :
+|                                      v
 +======================================+
 GAME: LOAD EXIT QUIT TO DOS 
 
@@ -28,6 +28,10 @@ L: LOAD
 S: SAVE
 Q: QUIT TO DOS
 ESC/X: EXIT
+A-J, Z: LOAD OR SAVE THAT SLOT
+UP/DOWN: MOVE A SLOT, PGUP/PGDN: A PAGE, HOME/END: THE FIRST AND LAST SLOT,
+  STOPPING AT THE ENDS (docs/ui-design.md, Lists)
+F1: THE SCREEN'S KEYS (KeyHelp.SAVE_KEYS)
 
 GAME: in magenta
 Command keys: white
@@ -39,11 +43,9 @@ Letters for the saved games are in white.
 QUIT TO DOS is one menu selection; Q is command (white).
 EXIT doesn't have a command key because E is a valid save game.
 
-= is the horizontal border
-| is the vertical border
-+ is a gold border box
-# is the recolored bar
-. is the recolored border (gray)
-^ is the up and down arrow
+The scroll bar (scrollbar.txt): ^ and v the arrows, T # G B the knob's top,
+middle, grip and bottom cells, : the track. It runs rows 1 to 22, between
+the corners, and shows only while there are more slots than the 7 shown.
 
-selector to bar length isn't to scale.
+Built in #3 step 6 (src/savemenu.pas): one frame, the title in its top
+edge, the slots a ListView. The time is 12-hour; the date YYYY/MM/DD.

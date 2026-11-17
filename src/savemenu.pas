@@ -20,8 +20,8 @@ const
   { the longest description and area name a slot keeps }
   DESC_LEN = 30;
   AREA_LEN = 18;
-  { the longest description typed, and shown, beside the time a slot was saved }
-  DESC_SHOWN = 27;
+  { the longest description typed, and shown, beside the time a slot was saved (docs/screen-mocks/load-save-game.txt) }
+  DESC_SHOWN = 20;
   { what ChooseSlot returns for Quit (#872): no slot's letter }
   QUIT_CHOSEN = '!';
   { the quick save's slot: F5 saves to it and F8 loads it, from the map menu }
@@ -75,6 +75,9 @@ procedure MoveOldQuickSave;
 { Write slot letter's savgam<x>.inf as a file of save s (FileUtil.WriteToSet): True when it was written. }
 function WriteSlotInfo(var s: FileUtil.TFileSet; letter: Char; desc: TSlotDesc; area: TSlotArea): Boolean;
 
+{ hour (0 to 23) and min as the menu shows when a slot was saved, a 12-hour time: 8:57 PM, 12:04 PM, 12:30 AM. }
+function ClockText(hour, min: Word): Types.TStr8;
+
 { 'Put save disk in X: (Esc gives up)', for the save directory's drive. }
 function SaveDiskMsg: Types.TStr40;
 
@@ -90,32 +93,33 @@ procedure CheckSaveDir;
 implementation
 
 uses Crt, Dos, GameVars, TextRend, Border, GameIo, DaxIo, MenuCore, AreaName, C_KEYS, StrUtil
-  {$IFDEF FPC}, NatFile{$ENDIF}, UiColor;
+  {$IFDEF FPC}, NatFile{$ENDIF}, UiColor, ListView, KeyHelp;
 
 const
   INFO_SIG = 'SINF';
   INFO_VERSION = 1;
-  { the list's frame: the title box on row 1, the list box rows 3..22, both boxes columns 1..38 }
-  BOX_LEFT = 1;
-  BOX_RIGHT = 38;
-  TITLE_ROW = 1;
-  LIST_TOP = 3;
-  LIST_BOTTOM = 22;
-  { the slots shown at once: each takes two rows and a blank one, below the top "(more)" row }
-  VISIBLE = 6;
-  { the text inside the list box, a column in from its borders: a slot's letter at LEFT_COL, its description and area
-    from DESC_COL, its time and date ending at RIGHT_COL }
+  { the screen (docs/screen-mocks/load-save-game.txt, scrollbar.txt): one full-screen frame, its title in the top edge,
+    the bar over its right edge on rows 1 to 22 }
+  FRAME_LEFT = 0;
+  FRAME_TOP = 0;
+  FRAME_RIGHT = 39;
+  FRAME_BOTTOM = 23;
+  { the slots: three rows each, two of text and a blank one, from row 2 (a blank row under the top edge) to row 22 }
+  SLOT_TOP = 2;
+  SLOT_BOTTOM = 22;
+  SLOT_ROWS = 3;
+  { the text, a column in from the border: a slot's letter at LEFT_COL, its description and area from DESC_COL, its
+    time and date ending at RIGHT_COL }
   LEFT_COL = 2;
   DESC_COL = 5;
-  RIGHT_COL = 37;
-  { the save popup's description line }
-  POP_DESC_ROW = LIST_TOP + 5;
-  { the bottom line's options, by GameVars.horizChoice }
-  OPT_NEXT = 1;
-  OPT_PREV = 2;
-  OPT_TAKE = 3;
-  OPT_QUIT = 4;
-  OPT_EXIT = 5;
+  RIGHT_COL = 36;
+  { the save popup, under the top edge: the slot, the location, then the description's label and line }
+  POP_TOP = 1;
+  POP_DESC_ROW = POP_TOP + 5;
+  { the bottom line's options, by GameVars.horizChoice: GAME: LOAD EXIT QUIT TO DOS }
+  OPT_TAKE = 1;
+  OPT_EXIT = 2;
+  OPT_QUIT = 3;
   { Exit's key, which no slot has (#910); Quit's is its Q (#1080) }
   EXIT_KEY = 'X';
   QUIT_KEY = 'Q';
@@ -136,13 +140,13 @@ var
   used: array[1..SLOT_COUNT] of Boolean;
   descs: array[1..SLOT_COUNT] of TSlotDesc;
   areas: array[1..SLOT_COUNT] of TSlotArea;
-  { when each was saved: hh:mm and YYYY/MM/DD }
-  clocks: array[1..SLOT_COUNT] of string[5];
+  { when each was saved: h:mm AM or PM, and YYYY/MM/DD }
+  clocks: array[1..SLOT_COUNT] of string[8];
   dates: array[1..SLOT_COUNT] of string[10];
   times: array[1..SLOT_COUNT] of LongInt;
-  { the selected slot, and the first one shown, as indexes into listed }
-  sel: Byte;
-  top: Byte;
+  { the screen's frame and its list of slots, entry n being slot n + 1 of the tables above }
+  frame: Border.TFrame;
+  slots: ListView.TListView;
 
 function SlotName(letter: Char; ext: Types.TStr8): FileUtil.TSetName;
 begin
@@ -258,6 +262,22 @@ end;
   YYYY/MM/DD), and its description and area. A save with no slot-info file (one made before the menu kept them) has no
   description, and its area is read from the save itself: the GBVM previousScriptId and mapId in its zone 0, which
   follows the one-byte diskIndex. }
+function ClockText(hour, min: Word): Types.TStr8;
+var
+  h: string[2];
+  half: string[3];
+begin
+  if hour < 12 then
+    half := ' AM'
+  else
+    half := ' PM';
+  hour := hour mod 12;
+  if hour = 0 then
+    hour := 12;
+  Str(hour, h);
+  ClockText := h + ':' + StrUtil.ZeroPad2(min) + half;
+end;
+
 procedure ReadSlot(i: Byte; letter: Char);
 var
   f: file;
@@ -286,7 +306,7 @@ begin
       times[i] := t;
       UnpackTime(t, dt);
       Str(dt.Year, y);
-      clocks[i] := StrUtil.ZeroPad2(dt.Hour) + ':' + StrUtil.ZeroPad2(dt.Min);
+      clocks[i] := SaveMenu.ClockText(dt.Hour, dt.Min);
       dates[i] := y + '/' + StrUtil.ZeroPad2(dt.Month) + '/' + StrUtil.ZeroPad2(dt.Day);
     end;
     if not SaveMenu.ReadSlotInfo(letter, descs[i], areas[i]) then begin
@@ -304,59 +324,46 @@ begin
   end;
 end;
 
-{ Draw the slots from top, each letter in white, the selected slot in white with its letter and colon in inverse video
-  (black on white, #1160) and the rest in light green, with "(more)" above when a slot is hidden above and below when
-  one is hidden below. }
-procedure DrawList;
+{ Draw slot entry + 1 of the tables on rows row and row + 1 (ListView's TDrawEntry): its letter in white, or, with the
+  cursor on it (current), the letter and colon in inverse video (black on white, #1160), its text white; another
+  slot's text light green. Each line is padded out to RIGHT_COL, so a slot is drawn over another in place. }
+procedure DrawSlot(entry: Integer; row: ShortInt; current: Boolean);
 var
-  k: Byte;
   i: Byte;
-  row: Byte;
   color: Byte;
+  line1: Types.TStr40;
+  line2: Types.TStr40;
 begin
-  Border.ClearBox(BOX_LEFT, LIST_TOP, BOX_RIGHT, LIST_BOTTOM);
-  if top > 1 then
-    MenuCore.DrawMore(BOX_LEFT, BOX_RIGHT, LIST_TOP);
-  for k := 0 to VISIBLE - 1 do begin
-    i := top + k;
-    if i <= count then begin
-      if i = sel then
-        color := White
-      else
-        color := LightGreen;
-      row := LIST_TOP + 1 + 3 * k;
-      if i = sel then
-        TextRend.DisplayStringOn(LEFT_COL, row, Black, White, listed[i] + ':')
-      else begin
-        TextRend.DisplayString(LEFT_COL, row, White, listed[i]);
-        TextRend.DisplayString(LEFT_COL + 1, row, color, ':');
-      end;
-      if used[i] then begin
-        TextRend.DisplayString(DESC_COL, row, color, Copy(descs[i], 1, DESC_SHOWN));
-        TextRend.DisplayString(RIGHT_COL + 1 - Length(clocks[i]), row, color, clocks[i]);
-        TextRend.DisplayString(DESC_COL, row + 1, color, areas[i]);
-        TextRend.DisplayString(RIGHT_COL + 1 - Length(dates[i]), row + 1, color, dates[i]);
-      end else
-        TextRend.DisplayString(DESC_COL, row, color, 'EMPTY');
-    end;
+  i := entry + 1;
+  if current then
+    color := White
+  else
+    color := valueColor;
+  if current then
+    TextRend.DisplayStringOn(LEFT_COL, row, Black, commandColor, listed[i] + ':')
+  else begin
+    TextRend.DisplayString(LEFT_COL, row, commandColor, listed[i]);
+    TextRend.DisplayString(LEFT_COL + 1, row, color, ':');
   end;
-  if top + VISIBLE - 1 < count then
-    MenuCore.DrawMore(BOX_LEFT, BOX_RIGHT, LIST_BOTTOM);
+  if used[i] then begin
+    line1 := StrUtil.PadRight(Copy(descs[i], 1, DESC_SHOWN), RIGHT_COL - DESC_COL + 1 - Length(clocks[i])) +
+             clocks[i];
+    line2 := StrUtil.PadRight(areas[i], RIGHT_COL - DESC_COL + 1 - Length(dates[i])) + dates[i];
+  end else begin
+    line1 := StrUtil.PadRight('EMPTY', RIGHT_COL - DESC_COL + 1);
+    line2 := StrUtil.PadRight('', RIGHT_COL - DESC_COL + 1);
+  end;
+  TextRend.DisplayString(DESC_COL, row, color, line1);
+  TextRend.DisplayString(DESC_COL, row + 1, color, line2);
 end;
 
-{ Select listed entry i, wrapping past either end, scroll it into view and redraw the list. }
-procedure MoveTo(i: Integer);
+{ Clear the screen and draw the frame, its title in the top edge, and the list with its bar. }
+procedure DrawScreen;
 begin
-  if i < 1 then
-    i := count
-  else if i > count then
-    i := 1;
-  sel := i;
-  if sel < top then
-    top := sel;
-  if sel > top + VISIBLE - 1 then
-    top := sel - VISIBLE + 1;
-  SaveMenu.DrawList;
+  TextRend.ClearScreen;
+  Border.InitFrame(frame, FRAME_LEFT, FRAME_TOP, FRAME_RIGHT, FRAME_BOTTOM, 0, 'Load/Save Game');
+  Border.DrawFrame(frame);
+  ListView.DrawList(slots);
 end;
 
 function ChooseSlot(saving: Boolean; start: Char): Char;
@@ -368,6 +375,7 @@ var
   newest: LongInt;
   chosen: Char;
   letters: string[SLOT_COUNT];
+  first: Byte;
 begin
   ChooseSlot := C_KEYS.NONE;
   { a string constant cannot be indexed }
@@ -384,21 +392,17 @@ begin
     TextRend.FlashBottomLine(Yellow, 'No saved games found to load.');
     Exit;
   end;
-  sel := 1;
+  first := 1;
   newest := 0;
   for i := 1 to count do
     if used[i] and ((newest = 0) or (times[i] > newest)) then begin
       newest := times[i];
-      sel := i;
+      first := i;
     end;
   if Pos(start, listed) > 0 then
-    sel := Pos(start, listed);
-  top := 1;
-  TextRend.ClearScreen;
-  Border.DrawBorder(BOX_LEFT, LIST_TOP, BOX_RIGHT, LIST_BOTTOM, 0);
-  Border.DrawBorder(BOX_LEFT, TITLE_ROW, BOX_RIGHT, TITLE_ROW, 0);
-  TextRend.DisplayCentered(BOX_LEFT, BOX_RIGHT, TITLE_ROW, White, 'Load/Save Game Menu');
-  SaveMenu.MoveTo(sel);
+    first := Pos(start, listed);
+  ListView.InitList(slots, frame, 0, SLOT_TOP, SLOT_BOTTOM, SLOT_ROWS, count, first - 1, DrawSlot);
+  SaveMenu.DrawScreen;
   if saving then
     action := 'Save'
   else
@@ -410,33 +414,26 @@ begin
     MenuCore.extraKeys := listed + EXIT_KEY;
     MenuCore.unmarked := [OPT_EXIT];
     MenuCore.enterToCaller := True;
-    ch := MenuCore.MenuHorizontal('Game: ', 'Next Prev ' + action + ' Quit Exit', promptColor, optionColor,
-                                  commandColor, True, False, ext);
+    MenuCore.helpToCaller := True;
+    ch := MenuCore.MenuHorizontal('Game: ', action + ' Exit Quit to dos', promptColor, optionColor, commandColor,
+                                  True, False, ext);
     { Enter takes the bottom line's current option }
     if (not ext) and (ch = C_KEYS.ENTER) then
       case GameVars.horizChoice of
-        OPT_NEXT: ch := 'N';
-        OPT_PREV: ch := 'P';
         OPT_TAKE: ch := action[1];
         OPT_QUIT: ch := QUIT_CHOSEN;
       else
-        ch := C_KEYS.NONE;
+        ch := EXIT_KEY;
       end;
-    if ext then
-      case ch of
-        C_KEYS.UP, C_KEYS.HOME: SaveMenu.MoveTo(sel - 1);
-        C_KEYS.DOWN, C_KEYS.END_KEY: SaveMenu.MoveTo(sel + 1);
-        { a screenful, stopping at the first or last slot rather than wrapping }
-        C_KEYS.PAGE_UP: if sel > VISIBLE then
-                       SaveMenu.MoveTo(sel - VISIBLE)
-                     else
-                       SaveMenu.MoveTo(1);
-        C_KEYS.PAGE_DOWN: if sel + VISIBLE < count then
-                       SaveMenu.MoveTo(sel + VISIBLE)
-                     else
-                       SaveMenu.MoveTo(count);
-      end
-    else if (ch = C_KEYS.NONE) or (ch = QUIT_CHOSEN) then
+    if ext and (ch = C_KEYS.F1) then begin
+      { the screen's keys, then the screen again }
+      KeyHelp.ShowPage(@KeyHelp.SAVE_KEYS, KeyHelp.SAVE_LINES);
+      SaveMenu.DrawScreen;
+    end else if ext then begin
+      { the arrows, Page Up and Down, Home and End move through the slots (ListView), stopping at the ends }
+      if ListView.ListKey(slots, ch) then
+        ;
+    end else if (ch = C_KEYS.NONE) or (ch = QUIT_CHOSEN) then
       chosen := ch
     else if ch = EXIT_KEY then
       chosen := C_KEYS.NONE
@@ -445,12 +442,8 @@ begin
     { a slot's letter takes it, as Save or Load on it does (#652) }
     else if (ch <> ' ') and (Pos(ch, listed) > 0) then
       chosen := ch
-    else if ch = 'N' then
-      SaveMenu.MoveTo(sel + 1)
-    else if ch = 'P' then
-      SaveMenu.MoveTo(sel - 1)
     else if ch = action[1] then
-      chosen := listed[sel];
+      chosen := listed[slots.cur + 1];
   until chosen <> ' ';
   TextRend.ClearBottomLine;
   ChooseSlot := chosen;
@@ -473,13 +466,14 @@ var
   default: TSlotDesc;
   key: Char;
 begin
-  { the list is cleared behind it: the slot and area on its second and third rows, the description on its fifth and
-    sixth }
-  Border.ClearBox(BOX_LEFT, LIST_TOP, BOX_RIGHT, LIST_BOTTOM);
+  { the list is cleared behind it, inside the frame, and the bar's edge is plain again: the slot and location on the
+    second and third rows, the description on the fifth and sixth }
+  Border.ClearBox(FRAME_LEFT + 1, FRAME_TOP + 1, FRAME_RIGHT - 1, FRAME_BOTTOM - 1);
+  Border.FrameBar(frame, 0, 0, 1, 0);
   default := 'SAVE GAME ' + letter;
-  TextRend.DisplayString(LEFT_COL, LIST_TOP + 1, LightGreen, default);
-  TextRend.DisplayString(LEFT_COL, LIST_TOP + 2, LightGreen, 'Location: ' + area);
-  TextRend.DisplayString(LEFT_COL, LIST_TOP + 4, LightGreen, 'Description:');
+  TextRend.DisplayString(LEFT_COL, POP_TOP + 1, LightGreen, default);
+  TextRend.DisplayString(LEFT_COL, POP_TOP + 2, LightGreen, 'Location: ' + area);
+  TextRend.DisplayString(LEFT_COL, POP_TOP + 4, LightGreen, 'Description:');
   s := Copy(desc, 1, DESC_SHOWN);
   TextRend.ClearBottomLine;
   { every letter goes to the description, so Exit has no hotkey: Escape takes it, and Enter saves (#657) }

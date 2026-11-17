@@ -21,9 +21,10 @@ const
   SHOW_TRAIN = 6;
   { Number of entries in KEYS. }
   KEY_LINES = 12;
-  { Number of entries in SHOP_KEYS and ITEM_KEYS. }
+  { Number of entries in SHOP_KEYS, ITEM_KEYS and SAVE_KEYS. }
   SHOP_LINES = 15;
   ITEM_LINES = 14;
+  SAVE_LINES = 11;
 
 type
   { One row in the help window. A ShowPage row with neither key nor what is a blank row; one with what only goes on
@@ -87,6 +88,20 @@ const
     (key: ''; what: ''; show: SHOW_ALWAYS),
     (key: 'ALT-n    '; what: 'Switch to PC n (1 to 8)'; show: SHOW_ALWAYS),
     (key: 'E, ESC   '; what: 'Exit'; show: SHOW_ALWAYS));
+
+  { The Load/Save Game screen (SaveMenu.ChooseSlot) }
+  SAVE_KEYS: array[1..SAVE_LINES] of TKeyLine = (
+    (key: 'F1       '; what: 'This Screen'; show: SHOW_ALWAYS),
+    (key: 'UP, DN   '; what: 'Move a slot'; show: SHOW_ALWAYS),
+    (key: 'PGUP/DN  '; what: 'Move a page'; show: SHOW_ALWAYS),
+    (key: 'HOME/END '; what: 'First, last slot'; show: SHOW_ALWAYS),
+    (key: ''; what: ''; show: SHOW_ALWAYS),
+    (key: 'L or S   '; what: 'Load or Save the slot'; show: SHOW_ALWAYS),
+    (key: 'ENTER    '; what: 'The bottom line''s choice'; show: SHOW_ALWAYS),
+    (key: 'A-J, Z   '; what: 'Load or Save that slot'; show: SHOW_ALWAYS),
+    (key: ''; what: ''; show: SHOW_ALWAYS),
+    (key: 'Q        '; what: 'Quit to DOS'; show: SHOW_ALWAYS),
+    (key: 'X, ESC   '; what: 'Exit'; show: SHOW_ALWAYS));
 
 { Returns whether help line n applies to the current settings and menu. }
 function LineShown(n: Byte; quickKeys: Boolean): Boolean;
